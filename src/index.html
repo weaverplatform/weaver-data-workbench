@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html ng-app="app">
+<head>
+  <!-- Meta -->
+  <meta charset="utf-8">
+
+  <!-- Title -->
+  <title>App</title>
+
+  <!-- Mobile settings-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- The main LESS file. Includes all other LESS files through nested @import statements -->
+  <link href="app.less" type="text/css" rel="stylesheet/less">
+</head>
+<body ng-class="{'body-down': application.lostConnection}">
+
+  <!-- Browsehappy message for unsupported browsers -->
+  <!--[if lt IE 7]>
+  <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+  <![endif]-->
+
+  <!-- LESS global settings (removed during grunt build) -->
+  <script in-production="false">
+    less = {logLevel: 1, async: true, fileAsync: true};
+  </script>
+
+  <!-- Automatic Bower dependencies updated by the grunt-wiredep task. -->
+  <!-- Run 'grunt wire' after a bower install X - - save to inject bower dependencies here -->
+  <!-- bower:js -->
+  <script src="bower_components/jquery/dist/jquery.js"></script>
+  <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
+  <script src="bower_components/underscore/underscore.js"></script>
+  <script src="bower_components/angular/angular.js"></script>
+  <script src="bower_components/angular-animate/angular-animate.js"></script>
+  <script src="bower_components/angular-sanitize/angular-sanitize.js"></script>
+  <script src="bower_components/angular-touch/angular-touch.js"></script>
+  <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
+  <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
+  <script src="bower_components/angular-bootstrap-contextmenu/contextMenu.js"></script>
+  <script src="bower_components/localforage/dist/localforage.js"></script>
+  <script src="bower_components/angular-localforage/dist/angular-localForage.js"></script>
+  <script src="bower_components/angular-xeditable/dist/js/xeditable.js"></script>
+  <script src="bower_components/angular-deferred-bootstrap/angular-deferred-bootstrap.js"></script>
+  <script src="bower_components/angular-socket-io/socket.js"></script>
+  <script src="bower_components/angular-cache/dist/angular-cache.js"></script>
+  <script src="bower_components/zeroclipboard/dist/ZeroClipboard.js"></script>
+  <script src="bower_components/moment/moment.js"></script>
+  <script src="bower_components/pikaday/pikaday.js"></script>
+  <script src="bower_components/handsontable/dist/handsontable.js"></script>
+  <script src="bower_components/chronicle/chronicle.js"></script>
+  <script src="bower_components/fingerprintjs2/dist/fingerprint2.js"></script>
+  <script src="bower_components/bluebird/js/browser/bluebird.js"></script>
+  <script src="bower_components/mousetrap/mousetrap.js"></script>
+  <script src="bower_components/select2/dist/js/select2.js"></script>
+  <script src="bower_components/spin.js/spin.js"></script>
+  <script src="bower_components/angular-spinner/angular-spinner.js"></script>
+  <script src="bower_components/angular-digest-hud/digest-hud.js"></script>
+  <script src="bower_components/offline/offline.js"></script>
+  <script src="bower_components/weaver-sdk-js/dist/weaver-sdk.full.js"></script>
+  <!-- endbower -->
+
+  
+  <!-- Manual Bower dependencies that wiredep failed to wire go here -->
+  <script src="bower_components/socket.io-client/socket.io.js"></script>
+  <script src="bower_components/cuid/dist/browser-cuid.js"></script>
+  <script src="bower_components/x-editable/dist/bootstrap3-editable/js/bootstrap-editable.js"></script>
+  <!---->
+  
+  <!-- On the fly LESS compiling (removed during grunt build) -->
+  <script in-production="false" src="bower_components/less.js/dist/less.js"></script>
+
+  <!-- Main file that bootstraps Angular (must be the last loaded script) -->
+  <script src="tmp/src/app.js"></script>
+
+  <!-- Anchor for the top ui.router template -->
+  <div ui-view></div>
+  </body>
+</html>
