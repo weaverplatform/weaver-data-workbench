@@ -1,0 +1,44 @@
+<div id="data-workbench">
+  <div id="trees-section">
+    <div id="trees-header">
+
+
+      <button ng-click="selectView('data')" class="btn btn-default">Data</button>
+      <button ng-click="selectView('collection')" class="btn btn-default">Collection</button>
+
+    </div>
+
+    <div id="trees-body">
+      <span  ng-show="activeTree=='data'">
+        <treecontrol class="tree-classic" tree-model="datatree" on-selection="showSelected(node)">
+          <a ng-click="buttonClick($event, node)">{{node.label}}</a>
+        </treecontrol>
+      </span>
+      <span ng-show="activeTree=='collection'">
+        <treecontrol class="tree-classic" tree-model="collectiontree" on-selection="showSelected(node)">
+          <a ng-click="buttonClick($event, node)">{{node.label}}</a>
+        </treecontrol>
+      </span>
+    </div>
+  </div>
+
+  <div id="tables-section">
+    <div id="tables-header">
+      <ul>
+        <li>{{selectedNode.name}}</li>
+        <li>{{message}}</li>
+        <li>tab 3</li>
+        <li>tab 4</li>
+        <li>tab 5</li>
+      </ul></div>
+    <div id="tables-body">
+      <div id="tables-container"></div>
+      <button ng-click="openAddColumnModal()" class="btn btn-default">Add column</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
