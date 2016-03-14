@@ -3,19 +3,25 @@
     <div id="trees-header">
 
 
-      <button ng-click="selectView('data')" class="btn btn-default">Data</button>
-      <button ng-click="selectView('collection')" class="btn btn-default">Collection</button>
+
+
+      <div class="btn-group btn-group-sm" role="group" aria-label="...">
+        <button ng-click="selectView('data')" type="button" class="btn btn-default" ng-class="{active:activeTree=='data'}">Data</button>
+        <!--<button type="button" class="btn btn-default">middle</button>-->
+        <button ng-click="selectView('collection')" type="button" class="btn btn-default" ng-class="{active:activeTree=='collection'}">Collection</button>
+      </div>
 
     </div>
 
     <div id="trees-body">
       <span  ng-show="activeTree=='data'">
-        <treecontrol class="tree-classic" tree-model="datatree" on-selection="showSelected(node)">
+        <!--expanded-nodes="datatree"-->
+        <treecontrol class="tree-classic" tree-model="openObjects" on-selection="showSelected(node)" options="objectTreeOptions">
           <a ng-click="buttonClick($event, node)">{{node.label}}</a>
         </treecontrol>
       </span>
       <span ng-show="activeTree=='collection'">
-        <treecontrol class="tree-classic" tree-model="collectiontree" on-selection="showSelected(node)">
+        <treecontrol class="tree-classic" tree-model="collectiontree" on-selection="showSelected(node)" options="collectionTreeOptions">
           <a ng-click="buttonClick($event, node)">{{node.label}}</a>
         </treecontrol>
       </span>
@@ -24,16 +30,29 @@
 
   <div id="tables-section">
     <div id="tables-header">
-      <ul>
-        <li>{{selectedNode.name}}</li>
-        <li>{{message}}</li>
-        <li>tab 3</li>
-        <li>tab 4</li>
-        <li>tab 5</li>
-      </ul></div>
+      <ul class="nav nav-tabs">
+
+
+        <li ng-repeat="object in openObjects" role="presentation" ng-class="{active:object==activeObject}" ng-click="activateObject(object)"><a href="#">{{object.label}}</a></li>
+
+
+        <li role="presentation" class="dropdown">
+          <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+            <i class="fa fa-cog"></i>
+            <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a ng-click="openAddObjectModal()">Add object</a></li>
+            <li><a ng-click="openAddColumnModal(activeObject)">Add column</a></li>
+            <li><a ng-click="openObject({label:'Elephant'})">Open Elephant</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a ng-click="closeObject(activeObject)">Close object</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
     <div id="tables-body">
-      <div id="tables-container"></div>
-      <button ng-click="openAddColumnModal()" class="btn btn-default">Add column</button>
+      <object-table ng-repeat="object in openObjects" object="object.object" ng-show="object==activeObject"/>
     </div>
   </div>
 </div>

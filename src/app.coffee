@@ -64,7 +64,6 @@ angular.module 'app',
 
     getData: () ->
 
-      console.log(@data)
       @data
 
     getColumns: ->
@@ -190,9 +189,75 @@ angular.module 'app',
     else
       return []
 
+  $scope.objectTreeOptions = {
+    injectClasses: {
+      ul: "a1"
+      li: "a2"
+      liSelected: "a7"
+      iExpanded: "a5"
+      iCollapsed: "a4"
+      iLeaf: "a4"
+      label: "a6"
+      labelSelected: "a8"
+    }
+  }
+
+  $scope.collectionTreeOptions = {
+    injectClasses: {
+      ul: "b1"
+      li: "b2"
+      liSelected: "b7"
+      iExpanded: "b3"
+      iCollapsed: "b4"
+      iLeaf: "b5"
+      label: "b6"
+      labelSelected: "b8"
+    }
+  }
+
+  object = Weaver.add({}, 'object')
+  object.annotations = Weaver.add()
+  object.$push('annotations')
+  console.log(object)
+
+  annotation = Weaver.add({label: 'has name'}, 'annotation')
+  annotation.properties = Weaver.add()
+  annotation.$push('properties')
+  object.annotations.$push(annotation)
+
+  property = Weaver.add({value: 'Bas'}, 'property')
+  annotation.properties.$push(property)
 
 
-  $scope.datatree = createSubTree(3, 4, "")
+  $scope.openObjects = [
+    {label: 'Bas', object}
+  ]
+
+  $scope.activeObject = $scope.openObjects[0]
+
+  $scope.openObject = (object) ->
+    $scope.openObjects.push(object)
+    $scope.activateObject(object)
+
+  $scope.activateObject = (object) ->
+    $scope.activeObject = object
+
+  $scope.closeObject = (object) ->
+
+    location = $scope.openObjects.indexOf(object)
+    if location > -1
+
+      # make next active
+      if object is $scope.activeObject
+        if $scope.openObjects.length > 0
+          nextLocation = (location + 1) % ($scope.openObjects.length)
+          $scope.activeObject = $scope.openObjects[nextLocation]
+
+      # remove
+      $scope.openObjects.splice(location, 1)
+
+
+  $scope.datatree = createSubTree(2, 4, "")
   $scope.collectiontree = createSubTree(1, 4, "")
 
 
@@ -207,8 +272,46 @@ angular.module 'app',
     $scope.message = sel.label
     $scope.selectedNode = sel
 
+  openObjects = $scope.openObjects
+  $scope.openAddObjectModal = ->
+    $uibModal.open({
+      animation: false
+      templateUrl: 'addObject.ng.html'
+      controller: ($scope) ->
+        $scope.title = 'Add object'
+        $scope.newObjectName = 'nameless'
 
-  $scope.openAddColumnModal = ->
+        $scope.ok = ->
+
+          newObjectName = $scope.newObjectName
+          if(newObjectName? and newObjectName isnt '')
+
+            object = Weaver.add({}, 'object')
+            object.annotations = Weaver.add()
+            object.$push('annotations')
+            console.log(object)
+
+            annotation = Weaver.add({label: 'has name'}, 'annotation')
+            annotation.properties = Weaver.add()
+            annotation.$push('properties')
+            object.annotations.$push(annotation)
+
+            property = Weaver.add({value: newObjectName}, 'property')
+            annotation.properties.$push(property)
+
+            openObjects.push({label: newObjectName, object})
+
+          $scope.$close();
+
+
+        $scope.cancel = ->
+          $scope.$close()
+
+
+      size: 'sm'
+    })
+
+  $scope.openAddColumnModal = (objectToUpdate) ->
     $uibModal.open({
       animation: false
       templateUrl: 'addColumn.ng.html'
@@ -222,9 +325,22 @@ angular.module 'app',
           annotationName = $scope.columnName
           if(annotationName? and annotationName isnt '')
 
-            tableService.newAnnotation(annotationName)
-            updateTableHeaders()
-            updateTableData()
+
+
+            annotation = Weaver.add({label: annotationName}, 'annotation')
+            annotation.properties = Weaver.add({},'_COL')
+            annotation.$push('properties')
+            objectToUpdate.object.annotations.$push(annotation)
+
+
+
+            console.log(objectToUpdate)
+
+
+
+#            tableService.newAnnotation(annotationName)
+#            updateTableHeaders()
+#            updateTableData()
 
           $scope.$close();
 
@@ -238,12 +354,12 @@ angular.module 'app',
     })
 
 
-  tableService = null
-  Weaver.get('ciljobavr00003j6jteznev4e', {eagerness: -1}).then((object) ->
-    console.log(object)
-    tableService = new TableService(object)
-    start()
-  )
+
+#  Weaver.get('ciljobavr00003j6jteznev4e', {eagerness: -1}).then((object) ->
+#    console.log(object)
+#    tableService = new TableService(object)
+#    start()
+#  )
 
 
 
@@ -259,11 +375,45 @@ angular.module 'app',
 
 
 
-  table = null
-  start = ->
-    table = new Handsontable($('#tables-container')[0],
 
-      {
+
+  updateTableHeaders = () ->
+    table.updateSettings({
+      columns:            tableService.getColumns()
+      colHeaders:         tableService.getColumnsHeader()
+    })
+
+  updateTableData = () ->
+    table.updateSettings({
+      data:               tableService.getData()
+    })
+
+
+
+
+
+
+
+
+
+
+.directive('objectTable', [ 'TableService', (TableService) ->
+  {
+    restrict: 'E'
+    scope: {
+      object: '='
+    }
+    link: (scope, element, attrs) ->
+
+      console.log('object linked')
+
+      object = scope.object
+      tableService = new TableService(object)
+
+      containerDiv = document.createElement("div")
+      element[0].appendChild(containerDiv)
+
+      table = new Handsontable(containerDiv, {
 
         data:               tableService.getData()
         columns:            tableService.getColumns()
@@ -307,30 +457,16 @@ angular.module 'app',
                   console.log('delete') # TODO
                   tableService.removeProperty(annotation, property)
 
-                # update existing property
+                  # update existing property
                 else if property? and changeNewValue isnt changeOldValue
                   console.log('edit')
                   tableService.updateProperty(property, changeNewValue)
 
-                # create new property
+                  # create new property
                 else if not property?
                   console.log('new property')
                   tableService.newProperty(annotation, changeNewValue)
 
-      })
-
-
-  updateTableHeaders = () ->
-    table.updateSettings({
-      columns:            tableService.getColumns()
-      colHeaders:         tableService.getColumnsHeader()
     })
-
-  updateTableData = () ->
-    table.updateSettings({
-      data:               tableService.getData()
-    })
-
-
-
-
+  }
+])
