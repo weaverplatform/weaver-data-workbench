@@ -1,28 +1,32 @@
+<div style="margin:20px">
+  <span style="    font-size: 15pt;"><i class="fa fa-tag"></i> {{dataset.$id()}}</span>
+  <a style="margin-left:10px;" class="pull-right btn-sm btn-primary"><i class="fa fa-download"></i></a>
+
+</div>
 <div id="data-workbench">
-  <div id="trees-section">
+
+  <div style="width:200px; min-width: 200px;" id="trees-section">
     <div id="trees-header">
 
 
 
 
-      <div class="btn-group btn-group-sm" role="group" aria-label="...">
-        <button ng-click="selectView('data')" type="button" class="btn btn-default" ng-class="{active:activeTree=='data'}">Data</button>
-        <!--<button type="button" class="btn btn-default">middle</button>-->
-        <button ng-click="selectView('collection')" type="button" class="btn btn-default" ng-class="{active:activeTree=='collection'}">Collection</button>
+      <div class="btn-group btn-group-sm" style="width:100%" role="group" aria-label="...">
+        <button style="width:50%" ng-click="selectView('data')" type="button" class="btn btn-default" ng-class="{active:activeTree=='data'}">Objects</button>
+        <button style="width:50%" ng-click="selectView('collection')" type="button" class="btn btn-default" ng-class="{active:activeTree=='collection'}">Collections</button>
       </div>
 
     </div>
 
     <div id="trees-body">
-      <span  ng-show="activeTree=='data'">
-        <!--expanded-nodes="datatree"-->
-        <treecontrol class="tree-classic" tree-model="openObjects" on-selection="showSelected(node)" options="objectTreeOptions">
-          <a ng-click="buttonClick($event, node)">{{node.label}}</a>
+      <span  ng-if="activeTree=='data'">
+        <treecontrol class="tree-classic" tree-model="allObjects" on-selection="showSelected(node)" options="objectTreeOptions">
+          <a ng-click="buttonClick($event, node)">{{node.name}}</a>
         </treecontrol>
       </span>
       <span ng-show="activeTree=='collection'">
         <treecontrol class="tree-classic" tree-model="collectiontree" on-selection="showSelected(node)" options="collectionTreeOptions">
-          <a ng-click="buttonClick($event, node)">{{node.label}}</a>
+          <a>{{node.label}}</a>
         </treecontrol>
       </span>
     </div>
@@ -31,28 +35,40 @@
   <div id="tables-section">
     <div id="tables-header">
       <ul class="nav nav-tabs">
+        
+        <!-- Objects -->
+        <li ng-repeat="object in openObjects" role="presentation" ng-class="{active:object==activeObject}" ng-click="activateObject(object)">
 
-
-        <li ng-repeat="object in openObjects" role="presentation" ng-class="{active:object==activeObject}" ng-click="activateObject(object)"><a href="#">{{object.label}}</a></li>
-
-
-        <li role="presentation" class="dropdown">
-          <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
-            <i class="fa fa-cog"></i>
-            <span class="caret"></span>
+          <!-- Object Tab -->
+          <a editable-text="object.name" onaftersave="object.$push('name')" e-form="renameBtn">{{object.name}}
+            
+            <!-- Buttons -->
+            <i style="margin-left: 5px;" class="fa fa-pencil"  ng-show="object==activeObject" ng-click="renameBtn.$show()" ng-hide="renameBtn.$visible"></i>
+            <i style="margin-left: 5px;" class="fa fa-close"   ng-show="object==activeObject" ng-click="closeObject(object)"></i>
           </a>
-          <ul class="dropdown-menu">
-            <li><a ng-click="openAddObjectModal()">Add object</a></li>
-            <li><a ng-click="openAddColumnModal(activeObject)">Add column</a></li>
-            <li><a ng-click="openObject({label:'Elephant'})">Open Elephant</a></li>
-            <li role="separator" class="divider"></li>
-            <li><a ng-click="closeObject(activeObject)">Close object</a></li>
-          </ul>
         </li>
+        
+        <!-- Add object -->
+        <li>
+          <a ng-click="addObject()" role="button">
+            <i class="fa fa-plus"></i>
+          </a>
+        </li>
+        
+        
       </ul>
     </div>
     <div id="tables-body">
-      <object-table ng-repeat="object in openObjects" object="object.object" ng-show="object==activeObject"/>
+      <div ng-repeat="object in openObjects" ng-show="object==activeObject">
+
+        <div style="margin-bottom: 20px;">
+          <a ng-click="addColumn(object)" class="btn btn-default"><i class="fa fa-plus"> Add column</i></a>
+          <span class="pull-right"><i class="fa fa-tag"></i><span> {{object.$id()}}</span></span>
+
+          <!--<a class="pull-right btn btn-danger"><i class="fa fa-trash"> Delete</i></a>-->
+        </div>
+        <object-table ng-if="!object.refresh" object="object"/>
+      </div>
     </div>
   </div>
 </div>
