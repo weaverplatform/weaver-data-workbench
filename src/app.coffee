@@ -15,6 +15,7 @@ angular.module 'app',
     'xeditable'       # In place editing of fields
   ]
 
+.constant('SERVER_ADDRESS', 'https://weaver-server.herokuapp.com')
 
 # Configuration
 .config(($urlRouterProvider, $stateProvider) ->
@@ -32,8 +33,8 @@ angular.module 'app',
     }
 )
 
-.factory('Weaver', ($window) ->
-  $window.weaver = new $window.Weaver().connect('https://weaver-server.herokuapp.com')
+.factory('Weaver', ($window, SERVER_ADDRESS) ->
+  $window.weaver = new $window.Weaver().connect(SERVER_ADDRESS)
   $window.weaver
 )
 
@@ -55,12 +56,17 @@ angular.module 'app',
 )
 
 
-.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, TableService, $uibModal, dataset, $timeout) ->
+.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, TableService, $uibModal, dataset, $timeout, SERVER_ADDRESS) ->
     
   # Init objects
   if not dataset.objects?
     dataset.objects = Weaver.collection()
     dataset.$push('objects')
+
+  $scope.downloadTurtle = ->
+    url = SERVER_ADDRESS + "/turtle?id=" + $scope.dataset.$id()
+    $window.location.href = url
+    return true
 
   $scope.dataset = dataset
   $scope.allObjects = []
