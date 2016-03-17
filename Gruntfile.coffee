@@ -176,15 +176,6 @@ module.exports = (grunt) ->
         
         src: [createFolderGlobs('*.html'), '!src/index.html', '!_SpecRunner.html']
         dest: 'tmp/templates-weaver.js'
-      
-      runx: 
-        options: 
-          module: 'weaver.runx'
-          htmlmin:'<%= htmlmin.main.options %>'
-        
-        src: [createFolderGlobs('*.html'), '!src/index.html', '!_SpecRunner.html']
-        dest: 'tmp/templates-weaverrunx.js'
-      
     
   
     copy: 
@@ -193,6 +184,10 @@ module.exports = (grunt) ->
           {cwd: 'src/img/', src: ['**'], dest: 'dist/img/', expand: true}
           {src: ['bower_components/font-awesome/fonts/**'], dest: 'dist/', filter:'isFile', expand:true}
           {src: ['bower_components/bootstrap/fonts/**'], dest: 'dist/', filter:'isFile', expand:true}
+        ]
+      weaver:
+        files: [
+          {src: ['tmp/weaver.js'], dest: 'dist/weaver.js', expand: false}
         ]
     
     
@@ -273,7 +268,7 @@ module.exports = (grunt) ->
 
   grunt.registerTask('default', ['clean:after', 'coffee', 'connect', 'watch'])
   grunt.registerTask('wire', ['wiredep'])
-  grunt.registerTask('build',['clean:before', 'coffeelint', 'coffee','less', 'htmlangular', 'dom_munger','ngtemplates','cssmin','concat','ngAnnotate','uglify','copy', 'htmlmin','imagemin','clean:after'])
+  grunt.registerTask('build',['clean:before', 'coffeelint', 'coffee','less', 'htmlangular', 'dom_munger','ngtemplates','cssmin','concat','ngAnnotate','copy:main', 'copy:weaver', 'htmlmin','imagemin','clean:after'])
 
 
 
