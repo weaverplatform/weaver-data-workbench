@@ -97,11 +97,9 @@ angular.module 'app',
     
   $scope.addColumn = (object) ->
     annotation = Weaver.add({label: 'unnamed'}, 'annotation')
-    annotation.properties = Weaver.collection()
-    annotation.$push('properties')
     object.annotations.$push(annotation)
-    object.refresh = true
-    $timeout((-> object.refresh = false), 1)
+    object.$refresh = true
+    $timeout((-> object.$refresh = false), 1)
     
 
 
@@ -198,35 +196,7 @@ angular.module 'app',
     $scope.message = sel.label
     $scope.selectedNode = sel
 
-  $scope.openAddColumnModal = (objectToUpdate) ->
-    $uibModal.open({
-      animation: false
-      templateUrl: 'addColumn.ng.html'
-      controller: ($scope) ->
-        $scope.title = 'Add column'
-        $scope.columnName = 'nameless'
-        $scope.columnType = 'string'
 
-        $scope.ok = ->
-
-          # post
-          annotationName = $scope.columnName
-          if(annotationName? and annotationName isnt '')
-            
-            annotation = Weaver.add({label: annotationName}, 'annotation')
-            annotation.properties = Weaver.collection()
-            annotation.$push('properties')
-            objectToUpdate.object.annotations.$push(annotation)
-
-
-          $scope.$close();
-
-        $scope.cancel = ->
-          # clean
-          $scope.$close();
-
-      size: 'sm'
-    })
 
 
 
@@ -245,7 +215,7 @@ angular.module 'app',
 
 
 
-.directive('objectTable', [ 'TableService', (TableService) ->
+.directive('objectTable', (TableService, $uibModal) ->
   {
     restrict: 'E'
     scope: {
@@ -253,17 +223,82 @@ angular.module 'app',
     }
     link: (scope, element) ->
 
+
+
+      openAddColumnModal = (objectToUpdate) ->
+        $uibModal.open({
+          animation: false
+          templateUrl: 'addColumn.ng.html'
+          controller: ($scope) ->
+            $scope.title = 'Add column'
+            $scope.columnName = 'nameless'
+            $scope.columnType = 'string'
+    
+            $scope.ok = ->
+    
+            # post
+              annotationName = $scope.columnName
+              if(annotationName? and annotationName isnt '')
+    
+                annotation = Weaver.add({label: annotationName}, 'annotation')
+                annotation.properties = Weaver.collection()
+                annotation.$push('properties')
+                objectToUpdate.object.annotations.$push(annotation)
+    
+    
+              $scope.$close();
+    
+            $scope.cancel = ->
+              # clean
+              $scope.$close();
+    
+          size: 'sm'
+        })
+
+
+      tableElement = element[0]
+      tableElement.addEventListener('click', (event) ->
+        # The click event would otherwise close the xeditable plugin for some reason
+        if event.target.classList? and event.target.classList[0] is 'edit-attribute'
+          event.stopPropagation()
+
+      , true)      
+      
+      tableElement.addEventListener('mousedown', (event) ->
+        # The click event would otherwise close the xeditable plugin for some reason
+        if event.target.classList? and event.target.classList[0] is 'edit-attribute'
+          event.stopPropagation()
+          openAddColumnModal(object)
+
+      , true)
+
       object = scope.object
       tableService = new TableService(object)
 
       containerDiv = document.createElement("div")
       element[0].appendChild(containerDiv)
-
+      
+      getColumns = ->
+        tableService.getColumns()
+        
+      getHeaders = ->
+        names   = tableService.getColumnsHeader()
+        (getHTMLHeader(name) for name in names)
+        
+      getHTMLHeader = (name) ->
+        """
+          <span class='table-header-title btn-stick'>#{name}</span>
+          <button style="padding: 0; margin-top: 1px; margin-left: 3px;" class='btn btn-default btn-xs tbl-header-button' id='#{name}'>
+            <i style='padding: 3px 5px;' class='edit-attribute fa fa-pencil'></i>
+          </button>
+        """
+        
+    
       table = new Handsontable(containerDiv, {
 
         data:               tableService.data
-        columns:            tableService.getColumns()
-        colHeaders:         tableService.getColumnsHeader()
+        columns:            getColumns()
+        colHeaders:         getHeaders()
         rowHeaders:         false
 
         minSpareRows:       1
@@ -302,19 +337,21 @@ angular.module 'app',
                   console.log('delete') # TODO
                   tableService.removeProperty(annotation, property)
 
-                  # update existing property
+                # update existing property
                 else if property? and changeNewValue isnt changeOldValue
                   console.log('edit')
                   tableService.updateProperty(property, changeNewValue)
 
-                  # create new property
+                # create new property
                 else if not property?
                   console.log('new property')
-                  tableService.newProperty(annotation, changeNewValue)
+                  table.setDataAtRowProp(changeRow, changeAnnotationId, '', 'override')
+                  newRow = tableService.newProperty(annotation, changeNewValue)
+                  table.setDataAtRowProp(newRow, changeAnnotationId, changeNewValue, 'override')
 
     })
   }
-])
+)
 
 
 
@@ -329,15 +366,15 @@ angular.module 'app',
 
 
   class TableService
-    annotationMap: {}
-    propertyMap: {}
-    data: []
-
-    nextCol: 0
-    nextRow: {}
-
+    
     constructor: (@object) ->
-      console.log(@object)
+      @annotationMap = {}
+      @propertyMap = {}
+      @data = []
+
+      @nextCol = 0
+      @nextRow = {}
+    
       for id, annotation of @object.annotations.$links()
         @addAnnotation(id, annotation)
 
@@ -354,9 +391,10 @@ angular.module 'app',
       if not @nextRow[id]?
         @nextRow[id] = 0
 
-      for propertyId, property of annotation.properties.$links()
-        if property.value?
-          @addProperty(id, property)
+      if annotation.properties?
+        for propertyId, property of annotation.properties.$links()
+          if property.value?
+            @addProperty(id, property)
 
       @nextCol++
 
@@ -370,6 +408,7 @@ angular.module 'app',
 
       @addAnnotation(annotation.$id(), annotation)
 
+    # returns row where the property is placed
     addProperty: (annotationId, property) ->
 
       while not @data[@nextRow[annotationId]]?
@@ -383,23 +422,29 @@ angular.module 'app',
         @propertyMap[@nextRow[annotationId]] = {}
       @propertyMap[@nextRow[annotationId]][annotationId] = property
 
-
       @nextRow[annotationId] += 1
+      @nextRow[annotationId]-1
 
-
+    # returns row where the property is placed
     newProperty: (annotation, value) ->
 
       property = Weaver.add({value: value}, 'property')
+      if not annotation.properties?
+        annotation.properties = Weaver.collection()
+        annotation.$push('properties')
+        
       annotation.properties.$push(property)
 
       @addProperty(annotation.$id(), property)
+
 
     updateProperty: (property, value) ->
       property.$push('value', value)
 
 
     removeProperty: (annotation, property) ->
-      property.$push('value', '' )       # TODO
+      if property?
+        property.$push('value', '' )       # TODO
 
 
 
