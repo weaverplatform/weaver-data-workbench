@@ -76,18 +76,28 @@ angular.module 'app',
     # Create object and add to dataset
     object = Weaver.add({name: 'Unnamed'}, 'object')
     $scope.dataset.objects.$push(object)
+
     
-    # Create first annotation and property
+    # Create first annotation
     object.annotations = Weaver.collection()
     object.$push('annotations')
 
     annotation = Weaver.add({label: 'has name', celltype: 'string'}, 'annotation')
-    annotation.properties = Weaver.collection()
-    annotation.$push('properties')
     object.annotations.$push(annotation)
 
-    property = Weaver.add({value: 'Unnamed'}, 'property')
-    annotation.properties.$push(property)
+
+    # Create first property
+    object.properties = Weaver.collection()
+    object.$push('properties')
+
+
+
+    property = Weaver.add({predicate: 'has name', value: 'Unnamed'}, 'property')
+    property.$push('subject', object)
+    property.$push('annotation', annotation)
+    object.properties.$push(property)
+
+
     
     # Open by default
     $scope.openObjects.push(object)
@@ -278,17 +288,29 @@ angular.module 'app',
 
 
 
+      findObjectByName = (name) ->
+        for object in scope.allObjects
+          if object.name is name
+            return object
+
+        null
+
+
       getColumns = ->
         updateColumn = (column) ->
+
           annotationId = column.data
           annotation = tableService.getAnnotationById(annotationId)
-          if annotation.celltype is 'text'
+
+
+          if annotation.celltype is 'string'
             column = {
-              data: column.data
+              data: annotationId
               type: 'text'
             }
           if annotation.celltype is 'object'
             column = {
+              data: annotationId
               type: 'autocomplete'
               strict: false
               source: (query, process) ->
@@ -309,7 +331,7 @@ angular.module 'app',
       getHTMLHeader = (header) ->
         """
           <span class='table-header-title btn-stick'>#{header.name}</span>
-          <button style="padding: 0; margin-top: 1px; margin-left: 3px;" class='btn btn-default btn-xs tbl-header-button' id='header_#{header.attributeId}'>
+          <button style="padding: 0; margin-top: 1px; margin-left: 3px;" class='btn btn-default btn-xs tbl-header-button' id='header_#{header.annotationId}'>
             <i style='padding: 3px 5px;' class='edit-attribute fa fa-pencil'></i>
           </button>
         """
@@ -356,18 +378,35 @@ angular.module 'app',
                 # delete
                 if changeNewValue is ''
                   console.log('delete')
-                  tableService.removeProperty(annotation, property)
+                  tableService.removeProperty(property)
 
                 # update existing property
                 else if property? and changeNewValue isnt changeOldValue
                   console.log('edit')
-                  tableService.updateProperty(property, changeNewValue)
+
+
+                  if annotation.celltype is 'string'
+                    newRow = tableService.updateProperty(property, changeNewValue)
+
+                  else if annotation.celltype is 'object'
+                    toObject = findObjectByName(changeNewValue)
+                    newRow = tableService.updateProperty(property, toObject)
+
 
                 # create new property
                 else if not property?
                   console.log('new property')
+
                   table.setDataAtRowProp(changeRow, changeAnnotationId, '', 'override')
-                  newRow = tableService.newProperty(annotation, changeNewValue)
+                  if annotation.celltype is 'string'
+                    newRow = tableService.newProperty(annotation, changeNewValue)
+
+                  else if annotation.celltype is 'object'
+                    toObject = findObjectByName(changeNewValue)
+                    newRow = tableService.newProperty(annotation, toObject)
+
+                  else
+                    return
                   table.setDataAtRowProp(newRow, changeAnnotationId, changeNewValue, 'override')
 
     })
@@ -399,11 +438,16 @@ angular.module 'app',
       for id, annotation of @object.annotations.$links()
         @addAnnotation(id, annotation)
 
+      for id, property of @object.properties.$links()
+        annotation = property.annotation
+        if annotation?
+          @addProperty(annotation, property)
+
     getColumns: ->
-      ({data: id} for id of @object.annotations.$links())
+      ({data: id} for id of @object.annotations.$links()).sort((a,b) -> a.data.localeCompare(b.data))
 
     getColumnsHeader: ->
-      ({name:annotation.label, attributeId:id} for id, annotation of @object.annotations.$links())
+      ({name:annotation.label, annotationId:id} for id, annotation of @object.annotations.$links()).sort((a,b) -> a.annotationId.localeCompare(b.annotationId))
 
     addAnnotation: (id, annotation) ->
 
@@ -412,19 +456,12 @@ angular.module 'app',
       if not @nextRow[id]?
         @nextRow[id] = 0
 
-      if annotation.properties?
-        for propertyId, property of annotation.properties.$links()
-          if property.value?
-            @addProperty(id, property)
-
       @nextCol++
 
 
     newAnnotation: (fields) ->
 
       annotation = Weaver.add(fields, 'annotation')
-      annotation.properties = Weaver.collection()
-      annotation.$push('properties')
       @object.annotations.$push(annotation)
 
       @addAnnotation(annotation.$id(), annotation)
@@ -440,13 +477,18 @@ angular.module 'app',
 
 
     # returns row where the property is placed
-    addProperty: (annotationId, property) ->
+    addProperty: (annotation, property) ->
 
-      while not @data[@nextRow[annotationId]]?
+      annotationId = annotation.$id()
+
+      if not @data[@nextRow[annotationId]]?
         @data.push({})
 
       # set data
-      @data[@nextRow[annotationId]][annotationId] = property.value
+      if annotation.celltype is 'string'
+        @data[@nextRow[annotationId]][annotationId] = property.value
+      if annotation.celltype is 'object'
+        @data[@nextRow[annotationId]][annotationId] = property.object.name
 
       # set property
       if(not @propertyMap[@nextRow[annotationId]]?)
@@ -459,23 +501,42 @@ angular.module 'app',
     # returns row where the property is placed
     newProperty: (annotation, value) ->
 
-      property = Weaver.add({value: value}, 'property')
-      if not annotation.properties?
-        annotation.properties = Weaver.collection()
-        annotation.$push('properties')
-        
-      annotation.properties.$push(property)
+      if annotation.celltype is 'string'
+        property = Weaver.add({predicate: annotation.label, value: value}, 'property')
+        property.$push('subject', @object)
+        property.$push('annotation', annotation)
+      if annotation.celltype is 'object'
+        property = Weaver.add({predicate: annotation.label}, 'property')
+        property.$push('subject', @object)
+        property.$push('object', value)
+        property.$push('annotation', annotation)
 
-      @addProperty(annotation.$id(), property)
+      if not property?
+        return
+
+      if not @object.properties?
+        @object.properties = Weaver.collection()
+        @object.$push('properties')
+
+      @object.properties.$push(property)
+
+      @addProperty(annotation, property)
 
 
     updateProperty: (property, value) ->
-      property.$push('value', value)
+
+      annotation = property.annotation
+      if annotation.celltype is 'string'
+        property.$push('value', value)
+      if annotation.celltype is 'object'
+        property.$push('object', value)
 
 
-    removeProperty: (annotation, property) ->
+
+    removeProperty: (property) ->
       if property?
-        annotation.properties.$remove(property)
+        if @object.properties?
+          @object.properties.$remove(property)
         property.$destroy()
 
 
@@ -494,4 +555,32 @@ angular.module 'app',
       null
 
 
+)
+.directive('weaverTrashbutton', ($compile, $timeout) ->
+  restrict: 'E'
+  confirmed: false
+  scope: {
+    deleteObject: '=object'
+    deleteAction: '&action'
+  }
+  link: (scope, element, attrs) ->
+
+    confirmed = false
+
+    element.on('mousedown', (event) ->
+
+      event.preventDefault()
+
+      if not confirmed
+        confirmed = true
+        element.addClass('confirmed')
+        $timeout((->
+          confirmed = false
+          element.removeClass('confirmed')
+        ), 5000)
+      else
+        confirmed = false
+        element.removeClass('confirmed')
+        scope.deleteAction()
+    )
 )
