@@ -152,12 +152,20 @@ body {
 }
 
 
-//object-table {
-//  position: relative;
-//}
-//table.handsontable {
+
+.handsontable th {
+  text-align: left;
+}
+.tbl-header-button {
+  padding: 0px;
 //  position: absolute;
-//}
+  right: 1px;
+  display: inline-block;
+  visibility: hidden;
+}
+th:hover .tbl-header-button {
+  visibility: visible;
+}
 
 button.btn {
   vertical-align: top;

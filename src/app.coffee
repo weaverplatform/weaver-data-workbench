@@ -287,6 +287,17 @@ angular.module 'app',
 
       , true)
 
+#      tableElement.addEventListener('mousedown', (event) ->
+#
+#
+#        if event.target.classList? and event.target.classList[0] is 'edit-attribute'
+#          event.stopPropagation()
+#          headerDivId = $(event.target).parent()[0].id
+#          annotationId = headerDivId.substr(7)
+#          editColumnModal(annotationId)
+#
+#      , true)
+
 
 
       containerDiv = document.createElement("div")
