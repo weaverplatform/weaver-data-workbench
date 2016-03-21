@@ -40,7 +40,8 @@
         <li ng-repeat="object in openTabs" role="presentation" ng-class="{active:object==activeTab}" ng-click="activateTab(object)">
 
           <!-- Object Tab -->
-          <a editable-text="object.name" onaftersave="object.$push('name')" e-form="renameBtn">{{object.name}}
+          <a editable-text="object.name" onaftersave="object.$push('name')" e-form="renameBtn" style="cursor:pointer">
+            {{object.name}}
             
             <!-- Buttons -->
             <i style="margin-left: 5px;" class="fa fa-pencil"  ng-show="object==activeTab" ng-click="renameBtn.$show()" ng-hide="renameBtn.$visible"></i>
@@ -49,18 +50,20 @@
         </li>
         
         <!-- Add object -->
-        <li>
-          <a ng-click="addObject()" role="button">
-            <i class="fa fa-puzzle-piece"></i>
+
+        <li role="presentation" class="dropdown">
+          <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
             <i class="fa fa-plus"></i>
           </a>
+          <ul class="dropdown-menu">
+            <li><a href="#" ng-click="addObject()">Object</a></li>
+            <li><a href="#" ng-click="addCollection()">Collection</a></li>
+            <!--<li role="separator" class="divider"></li>-->
+            <!--<li><a href="#">Separated link</a></li>-->
+          </ul>
         </li>
-        <li>
-          <a ng-click="addCollection()" role="button">
-            <i class="fa fa-object-group"></i>
-            <i class="fa fa-plus"></i>
-          </a>
-        </li>
+
+
         
         
       </ul>
