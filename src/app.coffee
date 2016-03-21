@@ -56,12 +56,14 @@ angular.module 'app',
 )
 
 
-.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, TableService, $uibModal, dataset, $timeout, SERVER_ADDRESS) ->
+.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, ObjectTableService, CollectionTableService, $uibModal, dataset, $timeout, SERVER_ADDRESS) ->
     
   # Init objects
   if not dataset.objects?
     dataset.objects = Weaver.collection()
     dataset.$push('objects')
+    dataset.collections = Weaver.collection()
+    dataset.$push('collections')
 
   $scope.downloadTurtle = ->
     url = SERVER_ADDRESS + "/turtle?id=" + $scope.dataset.$id()
@@ -70,11 +72,19 @@ angular.module 'app',
 
   $scope.dataset = dataset
   $scope.allObjects = []
-  
+
   readAllObjects = ->
     $scope.allObjects = (object for id, object of $scope.dataset.objects.$links())
 
   readAllObjects()
+
+
+  $scope.allCollections = []
+
+  readAllCollections = ->
+    $scope.allCollections = (collection for id, collection of $scope.dataset.collections.$links())
+
+  readAllCollections()
 
   # Adds a new object to the dataset
   $scope.addObject = ->
@@ -106,16 +116,55 @@ angular.module 'app',
 
     
     # Open by default
-    $scope.openObjects.push(object)
-    $scope.activeObject = object
+    $scope.openTabs.push(object)
+    $scope.activeTab = object
     readAllObjects()
+    readAllCollections()
+
+  # Adds a new object to the dataset
+  $scope.addCollection = ->
+
+    # Create object and add to dataset
+    collection = Weaver.add({name: 'Unnamed'}, 'collection')
+    $scope.dataset.collections.$push(collection)
+
+
+    # Create filters collection
+    collection.filters = Weaver.collection()
+    collection.$push('filters')
+    filter = Weaver.add({label: 'has name', celltype: 'string'}, 'filter')
+    collection.filters.$push(filter)
+
+    # Create objects set
+    collection.objects = Weaver.collection()
+    collection.$push('objects')
+
+
+
+
+
+    # Open by default
+    $scope.openCollections.push(collection)
+    $scope.activeTab = collection
+    readAllObjects()
+    readAllCollections()
+
     
-    
-  $scope.addColumn = (object) ->
-    annotation = Weaver.add({label: 'unnamed', celltype: 'string'}, 'annotation')
-    object.annotations.$push(annotation)
-    object.$refresh = true
-    $timeout((-> object.$refresh = false), 1)
+  $scope.addColumn = (entity) ->
+
+    if entity.$type() is 'object'
+
+      annotation = Weaver.add({label: 'unnamed', celltype: 'string'}, 'annotation')
+      entity.annotations.$push(annotation)
+      entity.$refresh = true
+      $timeout((-> entity.$refresh = false), 1)
+
+    if entity.$type() is 'collection'
+
+      filter = Weaver.add({label: 'unnamed', celltype: 'string'}, 'filter')
+      entity.filters.$push(filter)
+      entity.$refresh = true
+      $timeout((-> entity.$refresh = false), 1)
 
   $scope.deleteObject = (object) ->
     $scope.closeObject(object)
@@ -132,21 +181,7 @@ angular.module 'app',
 
 
 
-  createSubTree = (level, width, prefix) ->
 
-    if (level > 0)
-      res = []
-      for  i in [1 .. width]
-        res.push({
-          "label": "Collection " + prefix + i,
-          "id": "id" + prefix + i,
-          "i": i,
-          "children": createSubTree(level - 1, width, prefix + i + ".")
-        })
-
-      return res
-    else
-      return []
 
   $scope.objectTreeOptions = {
     injectClasses: {
@@ -175,33 +210,35 @@ angular.module 'app',
   }
 
 
-  $scope.openObjects = []
-  $scope.activeObject = $scope.openObjects[0]
+  $scope.openTabs = []
+  $scope.openCollections = []
+  $scope.activeTab = $scope.openTabs[0]
 
-  $scope.openObject = (object) ->
-    $scope.openObjects.push(object)
-    $scope.activateObject(object)
+  $scope.openTab = (object) ->
+    $scope.openTabs.push(object)
+    $scope.activateTab(object)
 
-  $scope.activateObject = (object) ->
-    $scope.activeObject = object
+  $scope.activateTab = (object) ->
+    console.log(object)
+    $scope.activeTab = object
 
   $scope.closeObject = (object) ->
 
-    location = $scope.openObjects.indexOf(object)
+    location = $scope.openTabs.indexOf(object)
     if location > -1
 
       # make next active
-      if object is $scope.activeObject
-        if $scope.openObjects.length > 0
-          nextLocation = (location + 1) % ($scope.openObjects.length)
-          $scope.activeObject = $scope.openObjects[nextLocation]
+      if object is $scope.activeTab
+        if $scope.openTabs.length > 0
+          nextLocation = (location + 1) % ($scope.openTabs.length)
+          $scope.activeTab = $scope.openTabs[nextLocation]
 
       # remove
-      $scope.openObjects.splice(location, 1)
+      $scope.openTabs.splice(location, 1)
 
 
-  $scope.datatree = createSubTree(2, 4, "")
-  $scope.collectiontree = createSubTree(1, 4, "")
+
+
 
 
   $scope.lastClicked = null;
@@ -210,8 +247,8 @@ angular.module 'app',
     $scope.lastClicked = node
     $scope.message = node.label
     
-    $scope.openObjects.push(node) if $scope.openObjects.indexOf(node) is -1
-    $scope.activeObject = node
+    $scope.openTabs.push(node) if $scope.openTabs.indexOf(node) is -1
+    $scope.activeTab = node
     
     $event.stopPropagation()
 
@@ -229,16 +266,16 @@ angular.module 'app',
 
 
 
-.directive('objectTable', (TableService, $uibModal, $timeout) ->
+.directive('objectTable', (ObjectTableService, $uibModal, $timeout) ->
   {
     restrict: 'E'
     link: (scope, element) ->
 
-      object = scope.object
-      tableService = new TableService(object)
+      object = scope.entity
+      objectTableService = new ObjectTableService(object)
 
       editColumnModal = (annotationId) ->
-        annotation = tableService.getAnnotationById(annotationId)
+        annotation = objectTableService.getAnnotationById(annotationId)
 
         $uibModal.open({
           animation: false
@@ -255,7 +292,7 @@ angular.module 'app',
 
               # post
               if($scope.columnName? and $scope.columnName isnt '')
-                tableService.updateAnnotation(annotationId, {label: $scope.columnName, celltype: $scope.columnType})
+                objectTableService.updateAnnotation(annotationId, {label: $scope.columnName, celltype: $scope.columnType})
 #                table.updateSettings({
 #                  colHeaders: getHeaders()
 #                })
@@ -289,12 +326,14 @@ angular.module 'app',
 
 #      tableElement.addEventListener('mousedown', (event) ->
 #
-#
-#        if event.target.classList? and event.target.classList[0] is 'edit-attribute'
+#        if event.altKey
 #          event.stopPropagation()
-#          headerDivId = $(event.target).parent()[0].id
-#          annotationId = headerDivId.substr(7)
-#          editColumnModal(annotationId)
+#          objectName = $(event.target)[0].innerText
+#          foundObject = findObjectByName(objectName)
+#          if foundObject?
+#            scope.openTab(foundObject)
+#
+#
 #
 #      , true)
 
@@ -317,7 +356,7 @@ angular.module 'app',
         updateColumn = (column) ->
 
           annotationId = column.data
-          annotation = tableService.getAnnotationById(annotationId)
+          annotation = objectTableService.getAnnotationById(annotationId)
 
 
           if annotation.celltype is 'string'
@@ -337,12 +376,12 @@ angular.module 'app',
             }
           column
 
-        (updateColumn(column) for column in tableService.getColumns())
+        (updateColumn(column) for column in objectTableService.getColumns())
 
 
 
       getHeaders = ->
-        headers   = tableService.getColumnsHeader()
+        headers   = objectTableService.getColumnsHeader()
         (getHTMLHeader(header) for header in headers)
         
       getHTMLHeader = (header) ->
@@ -356,7 +395,7 @@ angular.module 'app',
     
       table = new Handsontable(containerDiv, {
 
-        data:               tableService.data
+        data:               objectTableService.data
         columns:            getColumns()
         colHeaders:         getHeaders()
         rowHeaders:         false
@@ -382,8 +421,8 @@ angular.module 'app',
               changeOldValue = change[2]
               changeNewValue = change[3]
 
-              annotation = tableService.getAnnotationById(changeAnnotationId)
-              property = tableService.getProperty(changeRow, changeAnnotationId)
+              annotation = objectTableService.getAnnotationById(changeAnnotationId)
+              property = objectTableService.getProperty(changeRow, changeAnnotationId)
 
               # annotation should exist
               if not annotation?
@@ -395,7 +434,7 @@ angular.module 'app',
                 # delete
                 if changeNewValue is ''
                   console.log('delete')
-                  tableService.removeProperty(property)
+                  objectTableService.removeProperty(property)
 
                 # update existing property
                 else if property? and changeNewValue isnt changeOldValue
@@ -403,11 +442,11 @@ angular.module 'app',
 
 
                   if annotation.celltype is 'string'
-                    newRow = tableService.updateProperty(property, changeNewValue)
+                    newRow = objectTableService.updateProperty(property, changeNewValue)
 
                   else if annotation.celltype is 'object'
                     toObject = findObjectByName(changeNewValue)
-                    newRow = tableService.updateProperty(property, toObject)
+                    newRow = objectTableService.updateProperty(property, toObject)
 
 
                 # create new property
@@ -416,11 +455,11 @@ angular.module 'app',
 
                   table.setDataAtRowProp(changeRow, changeAnnotationId, '', 'override')
                   if annotation.celltype is 'string'
-                    newRow = tableService.newProperty(annotation, changeNewValue)
+                    newRow = objectTableService.newProperty(annotation, changeNewValue)
 
                   else if annotation.celltype is 'object'
                     toObject = findObjectByName(changeNewValue)
-                    newRow = tableService.newProperty(annotation, toObject)
+                    newRow = objectTableService.newProperty(annotation, toObject)
 
                   else
                     return
@@ -439,10 +478,10 @@ angular.module 'app',
 
 
 
-.factory('TableService', (Weaver) ->
+.factory('ObjectTableService', (Weaver) ->
 
 
-  class TableService
+  class ObjectTableService
     
     constructor: (@object) ->
       @annotationMap = {}
@@ -573,6 +612,316 @@ angular.module 'app',
 
 
 )
+
+
+
+
+
+
+
+
+
+
+
+
+
+.directive('collectionTable', (CollectionTableService, $uibModal, $timeout) ->
+  {
+  restrict: 'E'
+  link: (scope, element) ->
+
+    collection = scope.entity
+    collectionTableService = new CollectionTableService(collection)
+
+#    editColumnModal = (annotationId) ->
+#      annotation = collectionTableService.getAnnotationById(annotationId)
+#
+#      $uibModal.open({
+#        animation: false
+#        templateUrl: 'addColumn.ng.html'
+#        controller: ($scope) ->
+#          $scope.title = 'Add column'
+#          $scope.columnName = annotation.label
+#          $scope.columnType = annotation.celltype
+#
+#
+#
+#          $scope.ok = ->
+#
+#
+#            # post
+#            if($scope.columnName? and $scope.columnName isnt '')
+#              collectionTableService.updateAnnotation(annotationId, {label: $scope.columnName, celltype: $scope.columnType})
+#              #                table.updateSettings({
+#              #                  colHeaders: getHeaders()
+#              #                })
+#              #                table.render()
+#
+#              object.$refresh = true
+#              $timeout((-> object.$refresh = false), 1)
+#
+#            $scope.$close();
+#
+#          $scope.cancel = ->
+#            # clean
+#            $scope.$close();
+#
+#        size: 'sm'
+#      })
+
+
+    tableElement = element[0]
+
+    tableElement.addEventListener('mousedown', (event) ->
+
+
+      if event.target.classList? and event.target.classList[0] is 'edit-attribute'
+        event.stopPropagation()
+        headerDivId = $(event.target).parent()[0].id
+        annotationId = headerDivId.substr(7)
+        editColumnModal(annotationId)
+
+    , true)
+
+    #      tableElement.addEventListener('mousedown', (event) ->
+    #
+    #        if event.altKey
+    #          event.stopPropagation()
+    #          objectName = $(event.target)[0].innerText
+    #          foundObject = findObjectByName(objectName)
+    #          if foundObject?
+    #            scope.openTab(foundObject)
+    #
+    #
+    #
+    #      , true)
+
+
+
+    containerDiv = document.createElement("div")
+    element[0].appendChild(containerDiv)
+
+
+
+
+
+
+    getColumns = ->
+      updateColumn = (column) ->
+
+        filterId = column.data
+        filter = collectionTableService.getFilterById(filterId)
+
+
+        if filter.celltype is 'string'
+          column = {
+            data: filterId
+            type: 'text'
+          }
+        if filter.celltype is 'object'
+          column = {
+            data: filterId
+            type: 'autocomplete'
+            strict: false
+            source: (query, process) ->
+
+              candidates = [] #(object.name for id, object of scope.dataset.objects.$links())
+              process(candidates)
+          }
+        column
+
+      (updateColumn(column) for column in collectionTableService.getColumns())
+
+
+
+    getHeaders = ->
+      headers   = collectionTableService.getColumnsHeader()
+      (getHTMLHeader(header) for header in headers)
+
+    getHTMLHeader = (header) ->
+      """
+          <span class='table-header-title btn-stick'>#{header.name}</span>
+          <button style="padding: 0; margin-top: 1px; margin-left: 3px;" class='btn btn-default btn-xs tbl-header-button' id='header_#{header.annotationId}'>
+            <i style='padding: 3px 5px;' class='edit-attribute fa fa-pencil'></i>
+          </button>
+        """
+
+
+    table = new Handsontable(containerDiv, {
+
+      data:               collectionTableService.data
+      columns:            getColumns()
+      colHeaders:         getHeaders()
+      rowHeaders:         false
+
+      minSpareRows:       1
+      minSpareCols:       1
+
+      autoColumnSize:     true
+      columnSorting:      false
+      manualColumnFreeze: false
+      contextMenu:        true
+      mergeCells:         false
+      manualColumnMove:   false
+      manualRowMove:      false
+
+      afterChange: (changes, source) ->
+
+        if changes
+          for change in changes
+
+            changeRow = change[0]
+            changeAnnotationId = change[1]
+            changeOldValue = change[2]
+            changeNewValue = change[3]
+#
+#            annotation = collectionTableService.getAnnotationById(changeAnnotationId)
+#            property = collectionTableService.getProperty(changeRow, changeAnnotationId)
+#
+#            # annotation should exist
+#            if not annotation?
+#              console.error('annotation not found for '+changeAnnotationId)
+#              return
+#
+#            if source is 'edit'
+#
+#              # delete
+#              if changeNewValue is ''
+#                console.log('delete')
+#                collectionTableService.removeProperty(property)
+#
+#                # update existing property
+#              else if property? and changeNewValue isnt changeOldValue
+#                console.log('edit')
+#
+#
+#                if annotation.celltype is 'string'
+#                  newRow = collectionTableService.updateProperty(property, changeNewValue)
+#
+#                else if annotation.celltype is 'object'
+#                  toObject = findObjectByName(changeNewValue)
+#                  newRow = collectionTableService.updateProperty(property, toObject)
+#
+#
+#                # create new property
+#              else if not property?
+#                console.log('new property')
+#
+#                table.setDataAtRowProp(changeRow, changeAnnotationId, '', 'override')
+#                if annotation.celltype is 'string'
+#                  newRow = collectionTableService.newProperty(annotation, changeNewValue)
+#
+#                else if annotation.celltype is 'object'
+#                  toObject = findObjectByName(changeNewValue)
+#                  newRow = collectionTableService.newProperty(annotation, toObject)
+#
+#                else
+#                  return
+#                table.setDataAtRowProp(newRow, changeAnnotationId, changeNewValue, 'override')
+
+    })
+  }
+)
+
+
+
+
+
+.factory('CollectionTableService', (Weaver) ->
+
+
+  class CollectionTableService
+    
+    constructor: (@collection) ->
+
+      @filterMap = {}
+      @objectMap = []
+      @data = []
+
+      @nextCol = 0
+
+    
+      for id, filter of @collection.filters.$links()
+        @addFilter(id, filter)
+
+      for id, object of @collection.objects.$links()
+        @addobject(object)
+
+    getColumns: ->
+      ({data: id} for id of @collection.filters.$links()).sort((a,b) -> a.data.localeCompare(b.data))
+
+    getColumnsHeader: ->
+      ({name: filter.label, filterId: id} for id, filter of @collection.filters.$links()).sort((a,b) -> a.filterId.localeCompare(b.filterId))
+
+    addFilter: (id, filter) ->
+
+      @filterMap[id] = filter
+
+
+
+      @nextCol++
+
+
+    newFilter: (fields) ->
+
+      filter = Weaver.add(fields, 'filter')
+      @collection.filters.$push(filter)
+
+      @addFilter(filter)
+
+
+    updateFilter: (filterId, fields) ->
+
+      filter = @getFilterById(filterId)
+      if(filter?)
+        for key, value of fields
+          filter.$push(key, value)
+
+
+
+    # returns row where the property is placed
+    addObject: (object) ->
+
+      @objectMap.push(object)
+      row = @objectMap.length-1
+
+      for id, property of object.properties
+        console.log(id)
+
+#        # set data
+#        if annotation.celltype is 'string'
+#          @data[@nextRow[annotationId]][annotationId] = property.value
+#        if annotation.celltype is 'object'
+#          @data[@nextRow[annotationId]][annotationId] = property.object.name
+
+
+
+
+      row
+
+
+    getFilterById: (id) ->
+      if(@filterMap[id]?)
+        return @filterMap[id]
+      null
+
+
+
+    getObject: (row) ->
+      if(@propertyMap[row]?)
+        if(@propertyMap[row][id]?)
+          return @propertyMap[row][id]
+      null
+
+
+)
+
+
+
+
+
+
+
 .directive('weaverTrashbutton', ($compile, $timeout) ->
   restrict: 'E'
   confirmed: false

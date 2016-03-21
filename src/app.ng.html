@@ -25,8 +25,8 @@
         </treecontrol>
       </span>
       <span ng-show="activeTree=='collection'">
-        <treecontrol class="tree-classic" tree-model="collectiontree" on-selection="showSelected(node)" options="collectionTreeOptions">
-          <a>{{node.label}}</a>
+        <treecontrol class="tree-classic" tree-model="allCollections" on-selection="showSelected(node)" options="collectionTreeOptions">
+          <a ng-click="buttonClick($event, node)">{{node.name}}</a>
         </treecontrol>
       </span>
     </div>
@@ -37,20 +37,27 @@
       <ul class="nav nav-tabs">
         
         <!-- Objects -->
-        <li ng-repeat="object in openObjects" role="presentation" ng-class="{active:object==activeObject}" ng-click="activateObject(object)">
+        <li ng-repeat="object in openTabs" role="presentation" ng-class="{active:object==activeTab}" ng-click="activateTab(object)">
 
           <!-- Object Tab -->
           <a editable-text="object.name" onaftersave="object.$push('name')" e-form="renameBtn">{{object.name}}
             
             <!-- Buttons -->
-            <i style="margin-left: 5px;" class="fa fa-pencil"  ng-show="object==activeObject" ng-click="renameBtn.$show()" ng-hide="renameBtn.$visible"></i>
-            <i style="margin-left: 5px;" class="fa fa-close"   ng-show="object==activeObject" ng-click="closeObject(object)"></i>
+            <i style="margin-left: 5px;" class="fa fa-pencil"  ng-show="object==activeTab" ng-click="renameBtn.$show()" ng-hide="renameBtn.$visible"></i>
+            <i style="margin-left: 5px;" class="fa fa-close"   ng-show="object==activeTab" ng-click="closeObject(object)"></i>
           </a>
         </li>
         
         <!-- Add object -->
         <li>
           <a ng-click="addObject()" role="button">
+            <i class="fa fa-puzzle-piece"></i>
+            <i class="fa fa-plus"></i>
+          </a>
+        </li>
+        <li>
+          <a ng-click="addCollection()" role="button">
+            <i class="fa fa-object-group"></i>
             <i class="fa fa-plus"></i>
           </a>
         </li>
@@ -59,18 +66,20 @@
       </ul>
     </div>
     <div id="tables-body">
-      <div ng-repeat="object in openObjects" ng-show="object==activeObject">
+      <div ng-repeat="entity in openTabs" ng-show="entity==activeTab">
 
         <div style="margin-bottom: 20px;">
-          <a ng-click="addColumn(object)" class="btn btn-default"><i class="fa fa-plus"></i> Add column</a>
-          <a ng-click="deleteObject(object)" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete object</a>
-          <span class="pull-right" style="margin-right:20px;"><i class="fa fa-tag"></i> {{object.$id()}}</span>
+          <a ng-click="addColumn(entity)" class="btn btn-default"><i class="fa fa-plus"></i> Add column</a>
+          <a ng-click="deleteObject(entity)" ng-if="entity.$type()=='object'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete object</a>
+          <a ng-click="deleteCollection(entity)" ng-if="entity.$type()=='collection'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete collection</a>
+          <span class="pull-right" style="margin-right:20px;"><i class="fa fa-tag"></i> {{entity.$id()}}</span>
           <!--<weaver-trashbutton object="function" action="deleteFunction(context.behaviour, function)" style="margin-left: 7px" class="hide-action fa fa-trash"></weaver-trashbutton>-->
 
 
 
         </div>
-        <object-table ng-if="!object.$refresh" object="object"/>
+        <object-table ng-if="entity.$type()=='object' && !entity.$refresh" entity="entity" />
+        <collection-table ng-if="entity.$type()=='collection' && !entity.$refresh" entity="entity"/>
       </div>
     </div>
   </div>
