@@ -1,7 +1,7 @@
 'use strict'
 
 # Weaver Angular module
-angular.module 'app',
+angular.module 'weaver',
   [
     # Angular core modules
     'ngAnimate'
