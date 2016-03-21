@@ -132,7 +132,7 @@ angular.module 'weaver',
     # Create filters collection
     collection.filters = Weaver.collection()
     collection.$push('filters')
-    filter = Weaver.add({label: 'has name', celltype: 'string'}, 'filter')
+    filter = Weaver.add({label: 'has name', predicate:'hasName', celltype: 'string'}, 'filter')
     collection.filters.$push(filter)
 
     # Create objects set
@@ -144,7 +144,7 @@ angular.module 'weaver',
 
 
     # Open by default
-    $scope.openCollections.push(collection)
+    $scope.openTabs.push(collection)
     $scope.activeTab = collection
     readAllObjects()
     readAllCollections()
@@ -161,17 +161,24 @@ angular.module 'weaver',
 
     if entity.$type() is 'collection'
 
-      filter = Weaver.add({label: 'unnamed', celltype: 'string'}, 'filter')
+      filter = Weaver.add({label: 'unnamed', predicate:'unnamed', celltype: 'string'}, 'filter')
       entity.filters.$push(filter)
       entity.$refresh = true
       $timeout((-> entity.$refresh = false), 1)
 
   $scope.deleteObject = (object) ->
-    $scope.closeObject(object)
+    $scope.closeTab(object)
     location = $scope.allObjects.indexOf(object)
     $scope.allObjects.splice(location, 1)
     $scope.dataset.objects.$remove(object)
     object.$destroy()
+
+  $scope.deleteCollection = (collection) ->
+    $scope.closeTab(collection)
+    location = $scope.allCollections.indexOf(collection)
+    $scope.allCollections.splice(location, 1)
+    $scope.dataset.collections.$remove(collection)
+    collection.$destroy()
     
 
 
@@ -211,24 +218,22 @@ angular.module 'weaver',
 
 
   $scope.openTabs = []
-  $scope.openCollections = []
   $scope.activeTab = $scope.openTabs[0]
 
-  $scope.openTab = (object) ->
-    $scope.openTabs.push(object)
-    $scope.activateTab(object)
+  $scope.openTab = (entity) ->
+    $scope.openTabs.push(entity)
+    $scope.activateTab(entity)
 
-  $scope.activateTab = (object) ->
-    console.log(object)
-    $scope.activeTab = object
+  $scope.activateTab = (entity) ->
+    $scope.activeTab = entity
 
-  $scope.closeObject = (object) ->
+  $scope.closeTab = (entity) ->
 
-    location = $scope.openTabs.indexOf(object)
+    location = $scope.openTabs.indexOf(entity)
     if location > -1
 
       # make next active
-      if object is $scope.activeTab
+      if entity is $scope.activeTab
         if $scope.openTabs.length > 0
           nextLocation = (location + 1) % ($scope.openTabs.length)
           $scope.activeTab = $scope.openTabs[nextLocation]
@@ -279,24 +284,22 @@ angular.module 'weaver',
 
         $uibModal.open({
           animation: false
-          templateUrl: 'addColumn.ng.html'
+          templateUrl: 'addAnnotation.ng.html'
           controller: ($scope) ->
+
             $scope.title = 'Add column'
             $scope.columnName = annotation.label
             $scope.columnType = annotation.celltype
-
-
 
             $scope.ok = ->
 
 
               # post
               if($scope.columnName? and $scope.columnName isnt '')
-                objectTableService.updateAnnotation(annotationId, {label: $scope.columnName, celltype: $scope.columnType})
-#                table.updateSettings({
-#                  colHeaders: getHeaders()
-#                })
-#                table.render()
+
+                fields = {label: $scope.columnName, celltype: $scope.columnType}
+
+                objectTableService.updateAnnotation(annotationId, fields)
 
                 object.$refresh = true
                 $timeout((-> object.$refresh = false), 1)
@@ -543,7 +546,7 @@ angular.module 'weaver',
       # set data
       if annotation.celltype is 'string'
         @data[@nextRow[annotationId]][annotationId] = property.value
-      if annotation.celltype is 'object'
+      if annotation.celltype is 'object' and property.object?
         @data[@nextRow[annotationId]][annotationId] = property.object.name
 
       # set property
@@ -558,10 +561,13 @@ angular.module 'weaver',
     newProperty: (annotation, value) ->
 
       if annotation.celltype is 'string'
+
         property = Weaver.add({predicate: annotation.label, value: value}, 'property')
         property.$push('subject', @object)
         property.$push('annotation', annotation)
+
       if annotation.celltype is 'object'
+
         property = Weaver.add({predicate: annotation.label}, 'property')
         property.$push('subject', @object)
         property.$push('object', value)
@@ -633,41 +639,37 @@ angular.module 'weaver',
     collection = scope.entity
     collectionTableService = new CollectionTableService(collection)
 
-#    editColumnModal = (annotationId) ->
-#      annotation = collectionTableService.getAnnotationById(annotationId)
-#
-#      $uibModal.open({
-#        animation: false
-#        templateUrl: 'addColumn.ng.html'
-#        controller: ($scope) ->
-#          $scope.title = 'Add column'
-#          $scope.columnName = annotation.label
-#          $scope.columnType = annotation.celltype
-#
-#
-#
-#          $scope.ok = ->
-#
-#
-#            # post
-#            if($scope.columnName? and $scope.columnName isnt '')
-#              collectionTableService.updateAnnotation(annotationId, {label: $scope.columnName, celltype: $scope.columnType})
-#              #                table.updateSettings({
-#              #                  colHeaders: getHeaders()
-#              #                })
-#              #                table.render()
-#
-#              object.$refresh = true
-#              $timeout((-> object.$refresh = false), 1)
-#
-#            $scope.$close();
-#
-#          $scope.cancel = ->
-#            # clean
-#            $scope.$close();
-#
-#        size: 'sm'
-#      })
+    editColumnModal = (filterId) ->
+      filter = collectionTableService.getFilterById(filterId)
+
+      $uibModal.open({
+        animation: false
+        templateUrl: 'addFilter.ng.html'
+        controller: ($scope) ->
+
+          $scope.title = 'Add column'
+          $scope.columnName = filter.label
+          $scope.columnType = filter.celltype
+          $scope.columnPredicate = filter.predicate
+
+          $scope.ok = ->
+
+            # post
+            if($scope.columnName? and $scope.columnName isnt '')
+              fields = {label: $scope.columnName, predicate: $scope.columnPredicate, celltype: $scope.columnType}
+              collectionTableService.updateFilter(filterId, fields)
+
+              collection.$refresh = true
+              $timeout((-> collection.$refresh = false), 1)
+
+            $scope.$close();
+
+          $scope.cancel = ->
+            # clean
+            $scope.$close();
+
+        size: 'sm'
+      })
 
 
     tableElement = element[0]
@@ -683,18 +685,6 @@ angular.module 'weaver',
 
     , true)
 
-    #      tableElement.addEventListener('mousedown', (event) ->
-    #
-    #        if event.altKey
-    #          event.stopPropagation()
-    #          objectName = $(event.target)[0].innerText
-    #          foundObject = findObjectByName(objectName)
-    #          if foundObject?
-    #            scope.openTab(foundObject)
-    #
-    #
-    #
-    #      , true)
 
 
 
@@ -741,7 +731,7 @@ angular.module 'weaver',
     getHTMLHeader = (header) ->
       """
           <span class='table-header-title btn-stick'>#{header.name}</span>
-          <button style="padding: 0; margin-top: 1px; margin-left: 3px;" class='btn btn-default btn-xs tbl-header-button' id='header_#{header.annotationId}'>
+          <button style="padding: 0; margin-top: 1px; margin-left: 3px;" class='btn btn-default btn-xs tbl-header-button' id='header_#{header.filterId}'>
             <i style='padding: 3px 5px;' class='edit-attribute fa fa-pencil'></i>
           </button>
         """
@@ -873,6 +863,7 @@ angular.module 'weaver',
     updateFilter: (filterId, fields) ->
 
       filter = @getFilterById(filterId)
+
       if(filter?)
         for key, value of fields
           filter.$push(key, value)

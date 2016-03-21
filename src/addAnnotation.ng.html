@@ -1,0 +1,23 @@
+<div class="modal-header">
+  <h3 class="modal-title">{{title}}</h3>
+</div>
+<div class="modal-body">
+
+  <div class="input-group">
+    <span class="input-group-addon">Name:</span>
+    <input type="text" class="form-control" placeholder="Username" aria-describedby="basic-addon1" ng-model="columnName">
+  </div><br/>
+
+  <div class="input-group">
+    <span class="input-group-addon">Object type:</span>
+    <div class="input-group-btn">
+      <button type="button" class="btn btn-default" ng-click="columnType='string'" ng-class="{active:columnType=='string'}">String</button>
+      <button type="button" class="btn btn-default" ng-click="columnType='object'" ng-class="{active:columnType=='object'}">Object</button>
+    </div>
+  </div>
+
+</div>
+<div class="modal-footer">
+  <button class="btn btn-warning" type="button" ng-click="cancel()">Cancel</button>
+  <button class="btn btn-primary" type="button" ng-click="ok()">OK</button>
+</div>
