@@ -73,16 +73,16 @@
 
         <div style="margin-bottom: 20px;">
           <a ng-click="addColumn(entity)" class="btn btn-default"><i class="fa fa-plus"></i> Add column</a>
-          <a ng-click="deleteObject(entity)" ng-if="entity.$type()=='object'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete object</a>
-          <a ng-click="deleteCollection(entity)" ng-if="entity.$type()=='collection'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete collection</a>
+          <a ng-click="deleteObject(entity)" ng-if="entity.$type()=='$OBJECT'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete object</a>
+          <a ng-click="deleteCollection(entity)" ng-if="entity.$type()=='$COLLECTION'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete collection</a>
           <span class="pull-right" style="margin-right:20px;"><i class="fa fa-tag"></i> {{entity.$id()}}</span>
           <!--<weaver-trashbutton object="function" action="deleteFunction(context.behaviour, function)" style="margin-left: 7px" class="hide-action fa fa-trash"></weaver-trashbutton>-->
 
 
 
         </div>
-        <object-table ng-if="entity.$type()=='object' && !entity.$refresh" entity="entity" />
-        <collection-table ng-if="entity.$type()=='collection' && !entity.$refresh" entity="entity"/>
+        <object-table ng-if="entity.$type()=='$OBJECT' && !entity.$refresh" entity="entity" />
+        <collection-table ng-if="entity.$type()=='$COLLECTION' && !entity.$refresh" entity="entity"/>
       </div>
     </div>
   </div>

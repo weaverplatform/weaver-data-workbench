@@ -15,7 +15,8 @@ angular.module 'weaver',
     'xeditable'       # In place editing of fields
   ]
 
-.constant('SERVER_ADDRESS', 'https://weaver-server.herokuapp.com')
+#.constant('SERVER_ADDRESS', 'https://weaver-server.herokuapp.com')
+.constant('SERVER_ADDRESS', 'http://localhost:9487')
 
 # Configuration
 .config(($urlRouterProvider, $stateProvider) ->
@@ -90,7 +91,7 @@ angular.module 'weaver',
   $scope.addObject = ->
     
     # Create object and add to dataset
-    object = Weaver.add({name: 'Unnamed'}, 'object')
+    object = Weaver.add({name: 'Unnamed'}, '$OBJECT')
     $scope.dataset.objects.$push(object)
 
     
@@ -108,7 +109,7 @@ angular.module 'weaver',
 
 
 
-    property = Weaver.add({predicate: 'has name', value: 'Unnamed'}, 'property')
+    property = Weaver.add({predicate: 'has name', value: 'Unnamed'}, '$VALUE_PROPERTY')
     property.$push('subject', object)
     property.$push('annotation', annotation)
     object.properties.$push(property)
@@ -125,7 +126,7 @@ angular.module 'weaver',
   $scope.addCollection = ->
 
     # Create object and add to dataset
-    collection = Weaver.add({name: 'Unnamed'}, 'collection')
+    collection = Weaver.add({name: 'Unnamed'}, '$COLLECTION')
     $scope.dataset.collections.$push(collection)
 
 
@@ -152,19 +153,22 @@ angular.module 'weaver',
     
   $scope.addColumn = (entity) ->
 
-    if entity.$type() is 'object'
+    if entity.$type() is '$OBJECT'
 
       annotation = Weaver.add({label: 'unnamed', celltype: 'string'}, 'annotation')
       entity.annotations.$push(annotation)
       entity.$refresh = true
       $timeout((-> entity.$refresh = false), 1)
 
-    if entity.$type() is 'collection'
+    else if entity.$type() is '$COLLECTION'
 
       filter = Weaver.add({label: 'unnamed', predicate:'unnamed', celltype: 'string'}, 'filter')
       entity.filters.$push(filter)
       entity.$refresh = true
       $timeout((-> entity.$refresh = false), 1)
+
+    else
+      console.error('adding column to unsupported entity type: '+entity.$type())
 
   $scope.deleteObject = (object) ->
     $scope.closeTab(object)
@@ -562,13 +566,13 @@ angular.module 'weaver',
 
       if annotation.celltype is 'string'
 
-        property = Weaver.add({predicate: annotation.label, value: value}, 'property')
+        property = Weaver.add({predicate: annotation.label, value: value}, '$VALUE_PROPERTY')
         property.$push('subject', @object)
         property.$push('annotation', annotation)
 
       if annotation.celltype is 'object'
 
-        property = Weaver.add({predicate: annotation.label}, 'property')
+        property = Weaver.add({predicate: annotation.label}, '$OBJECT_PROPERTY')
         property.$push('subject', @object)
         property.$push('object', value)
         property.$push('annotation', annotation)
