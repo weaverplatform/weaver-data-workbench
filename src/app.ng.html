@@ -13,7 +13,7 @@
 
       <div class="btn-group btn-group-sm" style="width:100%" role="group" aria-label="...">
         <button style="width:50%" ng-click="selectView('data')" type="button" class="btn btn-default" ng-class="{active:activeTree=='data'}">Objects</button>
-        <button style="width:50%" ng-click="selectView('collection')" type="button" class="btn btn-default" ng-class="{active:activeTree=='collection'}">Collections</button>
+        <button style="width:50%" ng-click="selectView('view')" type="button" class="btn btn-default" ng-class="{active:activeTree=='view'}">Views</button>
       </div>
 
     </div>
@@ -24,16 +24,19 @@
           <a ng-click="buttonClick($event, node)">{{node.name}}</a>
         </treecontrol>
       </span>
-      <span ng-show="activeTree=='collection'">
-        <treecontrol class="tree-classic" tree-model="allCollections" on-selection="showSelected(node)" options="collectionTreeOptions">
+      <span ng-show="activeTree=='view'">
+        <treecontrol class="tree-classic" tree-model="allViews" on-selection="showSelected(node)" options="viewTreeOptions">
           <a ng-click="buttonClick($event, node)">{{node.name}}</a>
         </treecontrol>
       </span>
     </div>
   </div>
 
+
+
   <div id="tables-section">
     <div id="tables-header">
+    <!--<div>-->
       <ul class="nav nav-tabs">
         
         <!-- Objects -->
@@ -51,17 +54,21 @@
         
         <!-- Add object -->
 
+
         <li role="presentation" class="dropdown">
-          <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+
+
+          <a style="width:100%;cursor:pointer;" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
             <i class="fa fa-plus"></i>
           </a>
           <ul class="dropdown-menu">
-            <li><a href="#" ng-click="addObject()">Object</a></li>
-            <li><a href="#" ng-click="addCollection()">Collection</a></li>
+            <li><a style="width:100%;cursor:pointer;" ng-click="addObject()">Object</a></li>
+            <li><a style="width:100%;cursor:pointer;" ng-click="addView()">View</a></li>
             <!--<li role="separator" class="divider"></li>-->
             <!--<li><a href="#">Separated link</a></li>-->
           </ul>
         </li>
+
 
 
         
@@ -74,7 +81,7 @@
         <div style="margin-bottom: 20px;">
           <a ng-click="addColumn(entity)" class="btn btn-default"><i class="fa fa-plus"></i> Add column</a>
           <a ng-click="deleteObject(entity)" ng-if="entity.$type()=='$OBJECT'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete object</a>
-          <a ng-click="deleteCollection(entity)" ng-if="entity.$type()=='$COLLECTION'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete collection</a>
+          <a ng-click="deleteView(entity)" ng-if="entity.$type()=='$VIEW'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete view</a>
           <span class="pull-right" style="margin-right:20px;"><i class="fa fa-tag"></i> {{entity.$id()}}</span>
           <!--<weaver-trashbutton object="function" action="deleteFunction(context.behaviour, function)" style="margin-left: 7px" class="hide-action fa fa-trash"></weaver-trashbutton>-->
 
@@ -82,7 +89,7 @@
 
         </div>
         <object-table ng-if="entity.$type()=='$OBJECT' && !entity.$refresh" entity="entity" />
-        <collection-table ng-if="entity.$type()=='$COLLECTION' && !entity.$refresh" entity="entity"/>
+        <view-table ng-if="entity.$type()=='$VIEW' && !entity.$refresh" entity="entity"/>
       </div>
     </div>
   </div>

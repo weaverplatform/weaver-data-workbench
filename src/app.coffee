@@ -57,14 +57,14 @@ angular.module 'weaver',
 )
 
 
-.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, ObjectTableService, CollectionTableService, $uibModal, dataset, $timeout, SERVER_ADDRESS) ->
+.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, ObjectTableService, ViewTableService, $uibModal, dataset, $timeout, SERVER_ADDRESS) ->
     
   # Init objects
   if not dataset.objects?
     dataset.objects = Weaver.collection()
     dataset.$push('objects')
-    dataset.collections = Weaver.collection()
-    dataset.$push('collections')
+    dataset.views = Weaver.collection()
+    dataset.$push('views')
 
   $scope.downloadTurtle = ->
     url = SERVER_ADDRESS + "/turtle?id=" + $scope.dataset.$id()
@@ -80,12 +80,12 @@ angular.module 'weaver',
   readAllObjects()
 
 
-  $scope.allCollections = []
+  $scope.allViews = []
 
-  readAllCollections = ->
-    $scope.allCollections = (collection for id, collection of $scope.dataset.collections.$links())
+  readAllViews = ->
+    $scope.allViews = (view for id, view of $scope.dataset.views.$links())
 
-  readAllCollections()
+  readAllViews()
 
   # Adds a new object to the dataset
   $scope.addObject = ->
@@ -120,35 +120,35 @@ angular.module 'weaver',
     $scope.openTabs.push(object)
     $scope.activeTab = object
     readAllObjects()
-    readAllCollections()
+    readAllViews()
 
   # Adds a new object to the dataset
-  $scope.addCollection = ->
+  $scope.addView = ->
 
     # Create object and add to dataset
-    collection = Weaver.add({name: 'Unnamed'}, '$COLLECTION')
-    $scope.dataset.collections.$push(collection)
+    view = Weaver.add({name: 'Unnamed'}, '$VIEW')
+    $scope.dataset.views.$push(view)
 
 
-    # Create filters collection
-    collection.filters = Weaver.collection()
-    collection.$push('filters')
+    # Create filters view
+    view.filters = Weaver.collection()
+    view.$push('filters')
     filter = Weaver.add({label: 'has name', predicate:'hasName', celltype: 'string'}, 'filter')
-    collection.filters.$push(filter)
+    view.filters.$push(filter)
 
     # Create objects set
-    collection.objects = Weaver.collection()
-    collection.$push('objects')
+    view.objects = Weaver.collection()
+    view.$push('objects')
 
 
 
 
 
     # Open by default
-    $scope.openTabs.push(collection)
-    $scope.activeTab = collection
+    $scope.openTabs.push(view)
+    $scope.activeTab = view
     readAllObjects()
-    readAllCollections()
+    readAllViews()
 
     
   $scope.addColumn = (entity) ->
@@ -160,7 +160,7 @@ angular.module 'weaver',
       entity.$refresh = true
       $timeout((-> entity.$refresh = false), 1)
 
-    else if entity.$type() is '$COLLECTION'
+    else if entity.$type() is '$VIEW'
 
       filter = Weaver.add({label: 'unnamed', predicate:'unnamed', celltype: 'string'}, 'filter')
       entity.filters.$push(filter)
@@ -177,12 +177,12 @@ angular.module 'weaver',
     $scope.dataset.objects.$remove(object)
     object.$destroy()
 
-  $scope.deleteCollection = (collection) ->
-    $scope.closeTab(collection)
-    location = $scope.allCollections.indexOf(collection)
-    $scope.allCollections.splice(location, 1)
-    $scope.dataset.collections.$remove(collection)
-    collection.$destroy()
+  $scope.deleteView = (view) ->
+    $scope.closeTab(view)
+    location = $scope.allViews.indexOf(view)
+    $scope.allViews.splice(location, 1)
+    $scope.dataset.views.$remove(view)
+    view.$destroy()
     
 
 
@@ -207,7 +207,7 @@ angular.module 'weaver',
     }
   }
 
-  $scope.collectionTreeOptions = {
+  $scope.viewTreeOptions = {
     injectClasses: {
       ul: "b1"
       li: "b2"
@@ -635,16 +635,16 @@ angular.module 'weaver',
 
 
 
-.directive('collectionTable', (CollectionTableService, $uibModal, $timeout) ->
+.directive('viewTable', (ViewTableService, $uibModal, $timeout) ->
   {
   restrict: 'E'
   link: (scope, element) ->
 
-    collection = scope.entity
-    collectionTableService = new CollectionTableService(collection)
+    view = scope.entity
+    viewTableService = new ViewTableService(view)
 
     editColumnModal = (filterId) ->
-      filter = collectionTableService.getFilterById(filterId)
+      filter = viewTableService.getFilterById(filterId)
 
       $uibModal.open({
         animation: false
@@ -661,10 +661,10 @@ angular.module 'weaver',
             # post
             if($scope.columnName? and $scope.columnName isnt '')
               fields = {label: $scope.columnName, predicate: $scope.columnPredicate, celltype: $scope.columnType}
-              collectionTableService.updateFilter(filterId, fields)
+              viewTableService.updateFilter(filterId, fields)
 
-              collection.$refresh = true
-              $timeout((-> collection.$refresh = false), 1)
+              view.$refresh = true
+              $timeout((-> view.$refresh = false), 1)
 
             $scope.$close();
 
@@ -704,7 +704,7 @@ angular.module 'weaver',
       updateColumn = (column) ->
 
         filterId = column.data
-        filter = collectionTableService.getFilterById(filterId)
+        filter = viewTableService.getFilterById(filterId)
 
 
         if filter.celltype is 'string'
@@ -724,12 +724,12 @@ angular.module 'weaver',
           }
         column
 
-      (updateColumn(column) for column in collectionTableService.getColumns())
+      (updateColumn(column) for column in viewTableService.getColumns())
 
 
 
     getHeaders = ->
-      headers   = collectionTableService.getColumnsHeader()
+      headers   = viewTableService.getColumnsHeader()
       (getHTMLHeader(header) for header in headers)
 
     getHTMLHeader = (header) ->
@@ -743,7 +743,7 @@ angular.module 'weaver',
 
     table = new Handsontable(containerDiv, {
 
-      data:               collectionTableService.data
+      data:               viewTableService.data
       columns:            getColumns()
       colHeaders:         getHeaders()
       rowHeaders:         false
@@ -769,8 +769,8 @@ angular.module 'weaver',
             changeOldValue = change[2]
             changeNewValue = change[3]
 #
-#            annotation = collectionTableService.getAnnotationById(changeAnnotationId)
-#            property = collectionTableService.getProperty(changeRow, changeAnnotationId)
+#            annotation = viewTableService.getAnnotationById(changeAnnotationId)
+#            property = viewTableService.getProperty(changeRow, changeAnnotationId)
 #
 #            # annotation should exist
 #            if not annotation?
@@ -782,7 +782,7 @@ angular.module 'weaver',
 #              # delete
 #              if changeNewValue is ''
 #                console.log('delete')
-#                collectionTableService.removeProperty(property)
+#                viewTableService.removeProperty(property)
 #
 #                # update existing property
 #              else if property? and changeNewValue isnt changeOldValue
@@ -790,11 +790,11 @@ angular.module 'weaver',
 #
 #
 #                if annotation.celltype is 'string'
-#                  newRow = collectionTableService.updateProperty(property, changeNewValue)
+#                  newRow = viewTableService.updateProperty(property, changeNewValue)
 #
 #                else if annotation.celltype is 'object'
 #                  toObject = findObjectByName(changeNewValue)
-#                  newRow = collectionTableService.updateProperty(property, toObject)
+#                  newRow = viewTableService.updateProperty(property, toObject)
 #
 #
 #                # create new property
@@ -803,11 +803,11 @@ angular.module 'weaver',
 #
 #                table.setDataAtRowProp(changeRow, changeAnnotationId, '', 'override')
 #                if annotation.celltype is 'string'
-#                  newRow = collectionTableService.newProperty(annotation, changeNewValue)
+#                  newRow = viewTableService.newProperty(annotation, changeNewValue)
 #
 #                else if annotation.celltype is 'object'
 #                  toObject = findObjectByName(changeNewValue)
-#                  newRow = collectionTableService.newProperty(annotation, toObject)
+#                  newRow = viewTableService.newProperty(annotation, toObject)
 #
 #                else
 #                  return
@@ -821,12 +821,12 @@ angular.module 'weaver',
 
 
 
-.factory('CollectionTableService', (Weaver) ->
+.factory('ViewTableService', (Weaver) ->
 
 
-  class CollectionTableService
+  class ViewTableService
     
-    constructor: (@collection) ->
+    constructor: (@view) ->
 
       @filterMap = {}
       @objectMap = []
@@ -835,17 +835,17 @@ angular.module 'weaver',
       @nextCol = 0
 
     
-      for id, filter of @collection.filters.$links()
+      for id, filter of @view.filters.$links()
         @addFilter(id, filter)
 
-      for id, object of @collection.objects.$links()
+      for id, object of @view.objects.$links()
         @addobject(object)
 
     getColumns: ->
-      ({data: id} for id of @collection.filters.$links()).sort((a,b) -> a.data.localeCompare(b.data))
+      ({data: id} for id of @view.filters.$links()).sort((a,b) -> a.data.localeCompare(b.data))
 
     getColumnsHeader: ->
-      ({name: filter.label, filterId: id} for id, filter of @collection.filters.$links()).sort((a,b) -> a.filterId.localeCompare(b.filterId))
+      ({name: filter.label, filterId: id} for id, filter of @view.filters.$links()).sort((a,b) -> a.filterId.localeCompare(b.filterId))
 
     addFilter: (id, filter) ->
 
@@ -859,7 +859,7 @@ angular.module 'weaver',
     newFilter: (fields) ->
 
       filter = Weaver.add(fields, 'filter')
-      @collection.filters.$push(filter)
+      @view.filters.$push(filter)
 
       @addFilter(filter)
 
