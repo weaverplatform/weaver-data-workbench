@@ -20,12 +20,12 @@
 
     <div id="trees-body">
       <span  ng-if="activeTree=='data'">
-        <treecontrol class="tree-classic" tree-model="allObjects" on-selection="showSelected(node)" options="objectTreeOptions">
+        <treecontrol class="tree-classic" tree-model="allObjects" options="objectTreeOptions">
           <a ng-click="buttonClick($event, node)">{{node.name}}</a>
         </treecontrol>
       </span>
       <span ng-show="activeTree=='view'">
-        <treecontrol class="tree-classic" tree-model="allViews" on-selection="showSelected(node)" options="viewTreeOptions">
+        <treecontrol class="tree-classic" tree-model="allViews" options="viewTreeOptions">
           <a ng-click="buttonClick($event, node)">{{node.name}}</a>
         </treecontrol>
       </span>

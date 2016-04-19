@@ -16,7 +16,7 @@ angular.module 'weaver',
   ]
 
 #.constant('SERVER_ADDRESS', 'https://weaver-server.herokuapp.com')
-.constant('SERVER_ADDRESS', 'http://e93d1039.ngrok.io')
+.constant('SERVER_ADDRESS', 'http://localhost:9487')
 
 # Configuration
 .config(($urlRouterProvider, $stateProvider) ->
@@ -245,6 +245,7 @@ angular.module 'weaver',
   $scope.activeTab = $scope.openTabs[0]
 
   $scope.openTab = (entity) ->
+    console.log('open tab reached')
     $scope.openTabs.push(entity)
     $scope.activateTab(entity)
 
@@ -272,18 +273,14 @@ angular.module 'weaver',
 
   $scope.lastClicked = null;
 
-  $scope.buttonClick = ($event, node) ->
+  $scope.buttonClick = (event, node) ->
+
     $scope.lastClicked = node
-    $scope.message = node.label
     
     $scope.openTabs.push(node) if $scope.openTabs.indexOf(node) is -1
     $scope.activeTab = node
     
-    $event.stopPropagation()
-
-  $scope.showSelected = (sel) ->
-    $scope.message = sel.label
-    $scope.selectedNode = sel
+    event.stopPropagation()
 
 
 
@@ -360,6 +357,26 @@ angular.module 'weaver',
           editColumnModal(annotationId)
 
       , true)
+
+      tableElement.addEventListener('mousedown', (event) ->
+
+        if event.metaKey
+          event.stopPropagation()
+
+          if objectTableService.selectedCol? and objectTableService.selectedRow?
+
+            annotationId = objectTableService.getColIdByCol(objectTableService.selectedCol)
+            property = objectTableService.getProperty(objectTableService.selectedRow, annotationId)
+
+            if property.$type() is '$OBJECT_PROPERTY'
+
+              scope.buttonClick(event, property.object)
+              scope.$apply()
+
+
+
+      , true)
+
 
 
 
@@ -453,6 +470,11 @@ angular.module 'weaver',
         mergeCells:         false
         manualColumnMove:   false
         manualRowMove:      false
+
+        afterSelection: (r, c, r2, c2) ->
+
+          objectTableService.setSelectedCell(r, c)
+
 
         afterChange: (changes, source) ->
 
@@ -593,6 +615,9 @@ angular.module 'weaver',
         console.error('annotation '+annotationId+' not found for update')
 
 
+    setSelectedCell: (row, col) ->
+      @selectedRow = row
+      @selectedCol = col
 
     # returns row where the property is placed
     addProperty: (annotation, property) ->
@@ -618,8 +643,6 @@ angular.module 'weaver',
 
     # returns row where the property is placed
     addUnannotatedProperty: (property) ->
-
-      console.log('adding unannotated property')
 
       if not @unannotationsMap[property.predicate]?
         newid = cuid()
@@ -706,6 +729,9 @@ angular.module 'weaver',
         if cuid is id
           return predicate
       'unannotated'
+
+    getColIdByCol: (col) ->
+      @getColumns()[col].data
 
 
 
