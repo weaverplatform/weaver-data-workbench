@@ -79,7 +79,8 @@
       <div ng-repeat="entity in openTabs" ng-show="entity==activeTab">
 
         <div style="margin-bottom: 20px;">
-          <a ng-click="addColumn(entity)" class="btn btn-default"><i class="fa fa-plus"></i> Add column</a>
+          <a ng-click="addColumn(entity)" ng-if="entity.$type()=='$OBJECT'" class="btn btn-default"><i class="fa fa-plus"></i> Add column</a>
+          <a ng-click="addColumn(entity)" ng-if="entity.$type()=='$VIEW'" class="btn btn-default"><i class="fa fa-plus"></i> Add filter</a>
           <a ng-click="deleteObject(entity)" ng-if="entity.$type()=='$OBJECT'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete object</a>
           <a ng-click="deleteView(entity)" ng-if="entity.$type()=='$VIEW'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete view</a>
           <span class="pull-right" style="margin-right:20px;"><i class="fa fa-tag"></i> {{entity.$id()}}</span>

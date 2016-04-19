@@ -133,7 +133,15 @@ angular.module 'weaver',
     # Create filters view
     view.filters = Weaver.collection()
     view.$push('filters')
+
     filter = Weaver.add({label: 'has name', predicate:'hasName', celltype: 'string'}, 'filter')
+
+    # Create condition list
+    filter.conditions = Weaver.collection()
+    filter.$push('conditions')
+    condition = Weaver.add({predicate:'',operation:'any value',value:''}, 'condition')
+    filter.conditions.$push(condition)
+
     view.filters.$push(filter)
 
     # Create objects set
@@ -163,6 +171,13 @@ angular.module 'weaver',
     else if entity.$type() is '$VIEW'
 
       filter = Weaver.add({label: 'unnamed', predicate:'unnamed', celltype: 'string'}, 'filter')
+
+      # Create condition list
+      filter.conditions = Weaver.collection()
+      filter.$push('conditions')
+      condition = Weaver.add({predicate:'',operation:'any value',value:''}, 'condition')
+      filter.conditions.$push(condition)
+
       entity.filters.$push(filter)
       entity.$refresh = true
       $timeout((-> entity.$refresh = false), 1)
@@ -635,7 +650,7 @@ angular.module 'weaver',
 
 
 
-.directive('viewTable', (ViewTableService, $uibModal, $timeout) ->
+.directive('viewTable', (ViewTableService, Weaver, $uibModal, $timeout) ->
   {
   restrict: 'E'
   link: (scope, element) ->
@@ -651,17 +666,43 @@ angular.module 'weaver',
         templateUrl: 'addFilter.ng.html'
         controller: ($scope) ->
 
-          $scope.title = 'Add column'
-          $scope.columnName = filter.label
-          $scope.columnType = filter.celltype
-          $scope.columnPredicate = filter.predicate
+          $scope.operations = ['any value','exact value','regex','-','min. card','max. card']
+
+          $scope.title = 'Add filter'
+          $scope.filterName = filter.label
+          $scope.filterType = filter.celltype
+          $scope.conditions = filter.conditions
+
+
+          $scope.addCondition = ->
+            condition = Weaver.add({predicate:'',operation:$scope.operations[0],value:''}, 'condition')
+            $scope.conditions.$push(condition)
+
+          $scope.removeCondition = (condition) ->
+            $scope.conditions.$remove(condition.$id())
+
+            if((key for key of $scope.conditions.$links()).length < 1)
+              $scope.addCondition()
+
+          if((key for key of $scope.conditions.$links()).length < 1)
+            $scope.addCondition()
+
+
+
+
 
           $scope.ok = ->
 
             # post
-            if($scope.columnName? and $scope.columnName isnt '')
-              fields = {label: $scope.columnName, predicate: $scope.columnPredicate, celltype: $scope.columnType}
-              viewTableService.updateFilter(filterId, fields)
+            if($scope.filterName? and $scope.filterName isnt '')
+
+              filter.$push('label', $scope.filterName)
+              filter.$push('celltype', $scope.filterType)
+
+              for key, condition of $scope.conditions.$links()
+                condition.$push('predicate')
+                condition.$push('operation')
+                condition.$push('value')
 
               view.$refresh = true
               $timeout((-> view.$refresh = false), 1)
@@ -669,10 +710,11 @@ angular.module 'weaver',
             $scope.$close();
 
           $scope.cancel = ->
+
             # clean
             $scope.$close();
 
-        size: 'sm'
+        size: 'md'
       })
 
 
@@ -711,11 +753,13 @@ angular.module 'weaver',
           column = {
             data: filterId
             type: 'text'
+            editor: false
           }
         if filter.celltype is 'object'
           column = {
             data: filterId
             type: 'autocomplete'
+            editor: false
             strict: false
             source: (query, process) ->
 
@@ -859,18 +903,16 @@ angular.module 'weaver',
     newFilter: (fields) ->
 
       filter = Weaver.add(fields, 'filter')
+
+      # Create condition list
+      filter.conditions = Weaver.collection()
+      filter.$push('conditions')
+      condition = Weaver.add({predicate:'',operation:'any value',value:''}, 'condition')
+      filter.conditions.$push(condition)
+
       @view.filters.$push(filter)
 
       @addFilter(filter)
-
-
-    updateFilter: (filterId, fields) ->
-
-      filter = @getFilterById(filterId)
-
-      if(filter?)
-        for key, value of fields
-          filter.$push(key, value)
 
 
 

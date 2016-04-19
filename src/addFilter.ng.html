@@ -5,21 +5,38 @@
 
   <div class="input-group">
     <span class="input-group-addon">Name:</span>
-    <input type="text" class="form-control" ng-model="columnName">
-  </div><br/>
-
-  <div class="input-group">
-    <span class="input-group-addon">Predicate:</span>
-    <input type="text" class="form-control" ng-model="columnPredicate">
-  </div><br/>
+    <input type="text" class="form-control" ng-model="filterName">
+  </div>
 
   <div class="input-group">
     <span class="input-group-addon">Object type:</span>
-    <div class="input-group-btn">
-      <button type="button" class="btn btn-default" ng-click="columnType='string'" ng-class="{active:columnType=='string'}">String</button>
-      <button type="button" class="btn btn-default" ng-click="columnType='object'" ng-class="{active:columnType=='object'}">Object</button>
+    <div class="input-group-btn" style="width:100%;">
+      <button type="button" class="btn btn-default half" ng-click="filterType='string'" ng-class="{active:filterType=='string'}">String</button>
+      <button type="button" class="btn btn-default half" ng-click="filterType='object'" ng-class="{active:filterType=='object'}">Object</button>
     </div>
   </div>
+
+  <div class="input-group" ng-repeat="condition in conditions">
+    <span class="input-group-addon">Filter:</span>
+    <input type="text" class="form-control" name="x" placeholder="predicate" ng-model="condition.predicate">
+    <div class="input-group-btn search-panel">
+      <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" style="border-radius: 0px;border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;border-left: 0px solid #ccc;border-right: 0px solid #ccc;">
+        <span id="search_concept">{{condition.operation}}</span> <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu" role="menu">
+        <li ng-repeat="operation in operations" ng-class="{divider:operation=='-'}">
+          <a ng-if="operation!='-'" style="width:100%;cursor:pointer;" ng-click="condition.operation = operation">{{operation}}</a>
+        </li>
+      </ul>
+    </div>
+    <input type="text" class="form-control" name="x" placeholder="value" ng-model="condition.value">
+    <div class="input-group-btn">
+      <button class="btn btn-default" type="button" ng-click="removeCondition(condition)"><i class="fa fa-minus-circle" style="color:red"></i></button>
+      <button class="btn btn-default" type="button" ng-click="addCondition()"><i class="fa fa-plus-circle" style="color:green"></i></button>
+    </div>
+  </div>
+
+
 
 </div>
 <div class="modal-footer">
