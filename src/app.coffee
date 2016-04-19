@@ -16,7 +16,7 @@ angular.module 'weaver',
   ]
 
 #.constant('SERVER_ADDRESS', 'https://weaver-server.herokuapp.com')
-.constant('SERVER_ADDRESS', 'http://localhost:9487')
+.constant('SERVER_ADDRESS', 'http://e93d1039.ngrok.io')
 
 # Configuration
 .config(($urlRouterProvider, $stateProvider) ->
@@ -63,6 +63,7 @@ angular.module 'weaver',
   if not dataset.objects?
     dataset.objects = Weaver.collection()
     dataset.$push('objects')
+  if not dataset.views?
     dataset.views = Weaver.collection()
     dataset.$push('views')
 
@@ -162,6 +163,10 @@ angular.module 'weaver',
   $scope.addColumn = (entity) ->
 
     if entity.$type() is '$OBJECT'
+
+      if not entity.annotations?
+        entity.annotations = Weaver.collection()
+        entity.$push('annotations')
 
       annotation = Weaver.add({label: 'unnamed', celltype: 'string'}, '$ANNOTATION')
       entity.annotations.$push(annotation)
@@ -408,6 +413,7 @@ angular.module 'weaver',
             column = {
               data: annotationId
               type: 'text' # todo distingish
+              editor: false
             }
 
           column
@@ -478,10 +484,10 @@ angular.module 'weaver',
                   console.log('edit')
 
 
-                  if annotation.celltype is 'string'
+                  if property.$type() is '$VALUE_PROPERTY'
                     newRow = objectTableService.updateProperty(property, changeNewValue)
 
-                  else if annotation.celltype is 'object'
+                  else if property.$type() is '$OBJECT_PROPERTY'
                     toObject = findObjectByName(changeNewValue)
                     newRow = objectTableService.updateProperty(property, toObject)
 
@@ -491,10 +497,10 @@ angular.module 'weaver',
                   console.log('new property')
 
                   table.setDataAtRowProp(changeRow, changeAnnotationId, '', 'override')
-                  if annotation.celltype is 'string'
+                  if property.$type() is '$VALUE_PROPERTY'
                     newRow = objectTableService.newProperty(annotation, changeNewValue)
 
-                  else if annotation.celltype is 'object'
+                  else if property.$type() is '$OBJECT_PROPERTY'
                     toObject = findObjectByName(changeNewValue)
                     newRow = objectTableService.newProperty(annotation, toObject)
 
@@ -529,9 +535,10 @@ angular.module 'weaver',
 
       @nextCol = 0
       @nextRow = {}
-    
-      for id, annotation of @object.annotations.$links()
-        @addAnnotation(id, annotation)
+
+      if @object.annotations?
+        for id, annotation of @object.annotations.$links()
+          @addAnnotation(id, annotation)
 
       for id, property of @object.properties.$links()
         annotation = property.annotation
@@ -541,12 +548,16 @@ angular.module 'weaver',
           @addUnannotatedProperty(property)
 
     getColumns: ->
-      annotations = ({data: id} for id of @object.annotations.$links())
+      annotations = []
+      if @object.annotations?
+        annotations.push({data: id}) for id of @object.annotations.$links()
       annotations.push({data: id}) for predicate, id of @unannotationsMap
       annotations.sort((a,b) -> a.data.localeCompare(b.data))
 
     getColumnsHeader: ->
-      headers = ({name:annotation.label, annotationId:id, annotated: true} for id, annotation of @object.annotations.$links())
+      headers = []
+      if @object.annotations?
+        headers.push({name:annotation.label, annotationId:id, annotated: true}) for id, annotation of @object.annotations.$links()
       headers.push({name:predicate, annotationId:id, annotated: false}) for predicate, id of @unannotationsMap
       headers.sort((a,b) -> a.annotationId.localeCompare(b.annotationId))
 
@@ -561,6 +572,10 @@ angular.module 'weaver',
 
 
     newAnnotation: (fields) ->
+
+      if not @object.annotations?
+        @object.annotations = Weaver.collection()
+        @object.$push('annotations')
 
       annotation = Weaver.add(fields, '$ANNOTATION')
       @object.annotations.$push(annotation)
@@ -664,10 +679,9 @@ angular.module 'weaver',
 
     updateProperty: (property, value) ->
 
-      annotation = property.annotation
-      if annotation.celltype is 'string'          # todo use VALUE_PROPERTY
+      if property.$type() is '$VALUE_PROPERTY'
         property.$push('value', value)
-      if annotation.celltype is 'object'          # todo use OBJECT_PROPERTY
+      if property.$type() is '$OBJECT_PROPERTY'
         property.$push('object', value)
 
 
