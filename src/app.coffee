@@ -99,7 +99,7 @@ angular.module 'weaver',
     object.annotations = Weaver.collection()
     object.$push('annotations')
 
-    annotation = Weaver.add({label: 'has name', celltype: 'string'}, 'annotation')
+    annotation = Weaver.add({label: 'has name', celltype: 'string'}, '$ANNOTATION')
     object.annotations.$push(annotation)
 
 
@@ -134,12 +134,12 @@ angular.module 'weaver',
     view.filters = Weaver.collection()
     view.$push('filters')
 
-    filter = Weaver.add({label: 'has name', predicate:'hasName', celltype: 'string'}, 'filter')
+    filter = Weaver.add({label: 'has name', predicate:'hasName', celltype: 'string'}, '$FILTER')
 
     # Create condition list
     filter.conditions = Weaver.collection()
     filter.$push('conditions')
-    condition = Weaver.add({predicate:'',operation:'any value',value:''}, 'condition')
+    condition = Weaver.add({predicate:'',operation:'any value', value:''}, '$CONDITION')
     filter.conditions.$push(condition)
 
     view.filters.$push(filter)
@@ -163,19 +163,19 @@ angular.module 'weaver',
 
     if entity.$type() is '$OBJECT'
 
-      annotation = Weaver.add({label: 'unnamed', celltype: 'string'}, 'annotation')
+      annotation = Weaver.add({label: 'unnamed', celltype: 'string'}, '$ANNOTATION')
       entity.annotations.$push(annotation)
       entity.$refresh = true
       $timeout((-> entity.$refresh = false), 1)
 
     else if entity.$type() is '$VIEW'
 
-      filter = Weaver.add({label: 'unnamed', predicate:'unnamed', celltype: 'string'}, 'filter')
+      filter = Weaver.add({label: 'unnamed', predicate:'unnamed', celltype: 'string'}, '$FILTER')
 
       # Create condition list
       filter.conditions = Weaver.collection()
       filter.$push('conditions')
-      condition = Weaver.add({predicate:'',operation:'any value',value:''}, 'condition')
+      condition = Weaver.add({predicate:'',operation:'any value',value:''}, '$CONDITION')
       filter.conditions.$push(condition)
 
       entity.filters.$push(filter)
@@ -301,36 +301,46 @@ angular.module 'weaver',
       editColumnModal = (annotationId) ->
         annotation = objectTableService.getAnnotationById(annotationId)
 
-        $uibModal.open({
-          animation: false
-          templateUrl: 'addAnnotation.ng.html'
-          controller: ($scope) ->
+        if annotation?
 
-            $scope.title = 'Add column'
-            $scope.columnName = annotation.label
-            $scope.columnType = annotation.celltype
+          $uibModal.open({
+            animation: false
+            templateUrl: 'addAnnotation.ng.html'
+            controller: ($scope) ->
 
-            $scope.ok = ->
+              $scope.title = 'Add column'
+              $scope.columnName = annotation.label
+              $scope.columnType = annotation.celltype
+
+              $scope.ok = ->
 
 
-              # post
-              if($scope.columnName? and $scope.columnName isnt '')
+                # post
+                if($scope.columnName? and $scope.columnName isnt '')
 
-                fields = {label: $scope.columnName, celltype: $scope.columnType}
+                  fields = {
+                    label: $scope.columnName
+                    celltype: $scope.columnType
+                  }
 
-                objectTableService.updateAnnotation(annotationId, fields)
+                  objectTableService.updateAnnotation(annotationId, fields)
 
-                object.$refresh = true
-                $timeout((-> object.$refresh = false), 1)
-    
-              $scope.$close();
-    
-            $scope.cancel = ->
-              # clean
-              $scope.$close();
-    
-          size: 'sm'
-        })
+                  object.$refresh = true
+                  $timeout((-> object.$refresh = false), 1)
+
+                $scope.$close();
+
+              $scope.cancel = ->
+                # clean
+                $scope.$close();
+
+            size: 'sm'
+          })
+
+        # probably unannotated
+        else
+          predicate = objectTableService.getUnannotationById(annotationId)
+          console.log('found unannotated predicate '+predicate)
 
 
       tableElement = element[0]
@@ -346,18 +356,6 @@ angular.module 'weaver',
 
       , true)
 
-#      tableElement.addEventListener('mousedown', (event) ->
-#
-#        if event.altKey
-#          event.stopPropagation()
-#          objectName = $(event.target)[0].innerText
-#          foundObject = findObjectByName(objectName)
-#          if foundObject?
-#            scope.openTab(foundObject)
-#
-#
-#
-#      , true)
 
 
 
@@ -380,23 +378,40 @@ angular.module 'weaver',
           annotationId = column.data
           annotation = objectTableService.getAnnotationById(annotationId)
 
+          # default
+          column = {
+            data: annotationId
+            type: 'text'
+          }
 
-          if annotation.celltype is 'string'
+          if annotation?
+
+            if annotation.celltype is 'string'
+              column = {
+                data: annotationId
+                type: 'text'
+              }
+            if annotation.celltype is 'object'
+              column = {
+                data: annotationId
+                type: 'autocomplete'
+                strict: false
+                source: (query, process) ->
+
+                  candidates = (object.name for id, object of scope.dataset.objects.$links())
+                  process(candidates)
+              }
+
+
+          # probably unannotation
+          else
             column = {
               data: annotationId
-              type: 'text'
+              type: 'text' # todo distingish
             }
-          if annotation.celltype is 'object'
-            column = {
-              data: annotationId
-              type: 'autocomplete'
-              strict: false
-              source: (query, process) ->
 
-                candidates = (object.name for id, object of scope.dataset.objects.$links())
-                process(candidates)
-            }
           column
+
 
         (updateColumn(column) for column in objectTableService.getColumns())
 
@@ -485,6 +500,7 @@ angular.module 'weaver',
 
                   else
                     return
+
                   table.setDataAtRowProp(newRow, changeAnnotationId, changeNewValue, 'override')
 
     })
@@ -507,6 +523,7 @@ angular.module 'weaver',
     
     constructor: (@object) ->
       @annotationMap = {}
+      @unannotationsMap = {}      # predicate -> cuid
       @propertyMap = {}
       @data = []
 
@@ -520,12 +537,18 @@ angular.module 'weaver',
         annotation = property.annotation
         if annotation?
           @addProperty(annotation, property)
+        else
+          @addUnannotatedProperty(property)
 
     getColumns: ->
-      ({data: id} for id of @object.annotations.$links()).sort((a,b) -> a.data.localeCompare(b.data))
+      annotations = ({data: id} for id of @object.annotations.$links())
+      annotations.push({data: id}) for predicate, id of @unannotationsMap
+      annotations.sort((a,b) -> a.data.localeCompare(b.data))
 
     getColumnsHeader: ->
-      ({name:annotation.label, annotationId:id} for id, annotation of @object.annotations.$links()).sort((a,b) -> a.annotationId.localeCompare(b.annotationId))
+      headers = ({name:annotation.label, annotationId:id, annotated: true} for id, annotation of @object.annotations.$links())
+      headers.push({name:predicate, annotationId:id, annotated: false}) for predicate, id of @unannotationsMap
+      headers.sort((a,b) -> a.annotationId.localeCompare(b.annotationId))
 
     addAnnotation: (id, annotation) ->
 
@@ -539,7 +562,7 @@ angular.module 'weaver',
 
     newAnnotation: (fields) ->
 
-      annotation = Weaver.add(fields, 'annotation')
+      annotation = Weaver.add(fields, '$ANNOTATION')
       @object.annotations.$push(annotation)
 
       @addAnnotation(annotation.$id(), annotation)
@@ -551,6 +574,8 @@ angular.module 'weaver',
       if(annotation?)
         for key, value of fields
           annotation.$push(key, value)
+      else
+        console.error('annotation '+annotationId+' not found for update')
 
 
 
@@ -563,9 +588,42 @@ angular.module 'weaver',
         @data.push({})
 
       # set data
-      if annotation.celltype is 'string'
+      if property.$type() is '$VALUE_PROPERTY'
         @data[@nextRow[annotationId]][annotationId] = property.value
-      if annotation.celltype is 'object' and property.object?
+      if property.$type() is '$OBJECT_PROPERTY' and property.object?
+        @data[@nextRow[annotationId]][annotationId] = property.object.name
+
+      # set property
+      if(not @propertyMap[@nextRow[annotationId]]?)
+        @propertyMap[@nextRow[annotationId]] = {}
+      @propertyMap[@nextRow[annotationId]][annotationId] = property
+
+      @nextRow[annotationId] += 1
+      @nextRow[annotationId]-1
+
+    # returns row where the property is placed
+    addUnannotatedProperty: (property) ->
+
+      console.log('adding unannotated property')
+
+      if not @unannotationsMap[property.predicate]?
+        newid = cuid()
+        @unannotationsMap[property.predicate] = newid
+
+        if not @nextRow[newid]?
+          @nextRow[newid] = 0
+
+        @nextCol++
+
+      annotationId = @unannotationsMap[property.predicate]
+
+      if not @data[@nextRow[annotationId]]?
+        @data.push({})
+
+      # set data
+      if property.$type() is '$VALUE_PROPERTY'
+        @data[@nextRow[annotationId]][annotationId] = property.value
+      if property.$type() is '$OBJECT_PROPERTY' and property.object?
         @data[@nextRow[annotationId]][annotationId] = property.object.name
 
       # set property
@@ -607,9 +665,9 @@ angular.module 'weaver',
     updateProperty: (property, value) ->
 
       annotation = property.annotation
-      if annotation.celltype is 'string'
+      if annotation.celltype is 'string'          # todo use VALUE_PROPERTY
         property.$push('value', value)
-      if annotation.celltype is 'object'
+      if annotation.celltype is 'object'          # todo use OBJECT_PROPERTY
         property.$push('object', value)
 
 
@@ -626,6 +684,14 @@ angular.module 'weaver',
       if(@annotationMap[id]?)
         return @annotationMap[id]
       null
+
+    # returns predicate string
+    getUnannotationById: (id) ->
+
+      for predicate, cuid of @unannotationsMap
+        if cuid is id
+          return predicate
+      'unannotated'
 
 
 
@@ -675,7 +741,7 @@ angular.module 'weaver',
 
 
           $scope.addCondition = ->
-            condition = Weaver.add({predicate:'',operation:$scope.operations[0],value:''}, 'condition')
+            condition = Weaver.add({predicate:'',operation:$scope.operations[0],value:''}, '$CONDITION')
             $scope.conditions.$push(condition)
 
           $scope.removeCondition = (condition) ->
@@ -748,24 +814,32 @@ angular.module 'weaver',
         filterId = column.data
         filter = viewTableService.getFilterById(filterId)
 
+        # default
+        column = {
+          data: filterId
+          type: 'text'
+          editor: false
+        }
 
-        if filter.celltype is 'string'
-          column = {
-            data: filterId
-            type: 'text'
-            editor: false
-          }
-        if filter.celltype is 'object'
-          column = {
-            data: filterId
-            type: 'autocomplete'
-            editor: false
-            strict: false
-            source: (query, process) ->
+        if filter?
 
-              candidates = [] #(object.name for id, object of scope.dataset.objects.$links())
-              process(candidates)
-          }
+          if filter.celltype is 'string'
+            column = {
+              data: filterId
+              type: 'text'
+              editor: false
+            }
+          if filter.celltype is 'object'
+            column = {
+              data: filterId
+              type: 'autocomplete'
+              editor: false
+              strict: false
+              source: (query, process) ->
+
+                candidates = [] #(object.name for id, object of scope.dataset.objects.$links())
+                process(candidates)
+            }
         column
 
       (updateColumn(column) for column in viewTableService.getColumns())
@@ -812,50 +886,6 @@ angular.module 'weaver',
             changeAnnotationId = change[1]
             changeOldValue = change[2]
             changeNewValue = change[3]
-#
-#            annotation = viewTableService.getAnnotationById(changeAnnotationId)
-#            property = viewTableService.getProperty(changeRow, changeAnnotationId)
-#
-#            # annotation should exist
-#            if not annotation?
-#              console.error('annotation not found for '+changeAnnotationId)
-#              return
-#
-#            if source is 'edit'
-#
-#              # delete
-#              if changeNewValue is ''
-#                console.log('delete')
-#                viewTableService.removeProperty(property)
-#
-#                # update existing property
-#              else if property? and changeNewValue isnt changeOldValue
-#                console.log('edit')
-#
-#
-#                if annotation.celltype is 'string'
-#                  newRow = viewTableService.updateProperty(property, changeNewValue)
-#
-#                else if annotation.celltype is 'object'
-#                  toObject = findObjectByName(changeNewValue)
-#                  newRow = viewTableService.updateProperty(property, toObject)
-#
-#
-#                # create new property
-#              else if not property?
-#                console.log('new property')
-#
-#                table.setDataAtRowProp(changeRow, changeAnnotationId, '', 'override')
-#                if annotation.celltype is 'string'
-#                  newRow = viewTableService.newProperty(annotation, changeNewValue)
-#
-#                else if annotation.celltype is 'object'
-#                  toObject = findObjectByName(changeNewValue)
-#                  newRow = viewTableService.newProperty(annotation, toObject)
-#
-#                else
-#                  return
-#                table.setDataAtRowProp(newRow, changeAnnotationId, changeNewValue, 'override')
 
     })
   }
@@ -902,12 +932,12 @@ angular.module 'weaver',
 
     newFilter: (fields) ->
 
-      filter = Weaver.add(fields, 'filter')
+      filter = Weaver.add(fields, '$FILTER')
 
       # Create condition list
       filter.conditions = Weaver.collection()
       filter.$push('conditions')
-      condition = Weaver.add({predicate:'',operation:'any value',value:''}, 'condition')
+      condition = Weaver.add({predicate:'',operation:'any value',value:''}, '$CONDITION')
       filter.conditions.$push(condition)
 
       @view.filters.$push(filter)
@@ -924,12 +954,6 @@ angular.module 'weaver',
 
       for id, property of object.properties
         console.log(id)
-
-#        # set data
-#        if annotation.celltype is 'string'
-#          @data[@nextRow[annotationId]][annotationId] = property.value
-#        if annotation.celltype is 'object'
-#          @data[@nextRow[annotationId]][annotationId] = property.object.name
 
 
 
