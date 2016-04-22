@@ -13,6 +13,7 @@ angular.module 'weaver',
     'ui.bootstrap'    # Angular Dialog
     'treeControl'     # Tree of objects
     'xeditable'       # In place editing of fields
+    'nya.bootstrap.select'
   ]
 
 #.constant('SERVER_ADDRESS', 'https://weaver-server.herokuapp.com')
@@ -57,7 +58,7 @@ angular.module 'weaver',
 )
 
 
-.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, ObjectTableService, ViewTableService, $uibModal, dataset, $timeout, SERVER_ADDRESS) ->
+.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, ObjectTableService, ViewTableService, $uibModal, dataset, $timeout, SERVER_ADDRESS ) ->
     
   # Init objects
   if not dataset.objects?
@@ -140,7 +141,7 @@ angular.module 'weaver',
     # Create condition list
     filter.conditions = Weaver.collection()
     filter.$push('conditions')
-    condition = Weaver.add({predicate:'',operation:'any value', value:''}, '$CONDITION')
+    condition = Weaver.add({predicate:'', operation:'any value', value:'', conditiontype:'string'}, '$CONDITION')
     filter.conditions.$push(condition)
 
     view.filters.$push(filter)
@@ -180,7 +181,7 @@ angular.module 'weaver',
       # Create condition list
       filter.conditions = Weaver.collection()
       filter.$push('conditions')
-      condition = Weaver.add({predicate:'',operation:'any value',value:''}, '$CONDITION')
+      condition = Weaver.add({predicate:'', operation:'any value', value:'', conditiontype:'string'}, '$CONDITION')
       filter.conditions.$push(condition)
 
       entity.filters.$push(filter)
@@ -245,7 +246,6 @@ angular.module 'weaver',
   $scope.activeTab = $scope.openTabs[0]
 
   $scope.openTab = (entity) ->
-    console.log('open tab reached')
     $scope.openTabs.push(entity)
     $scope.activateTab(entity)
 
@@ -298,6 +298,7 @@ angular.module 'weaver',
     link: (scope, element) ->
 
       object = scope.entity
+      dataset = scope.dataset
       objectTableService = new ObjectTableService(object)
 
       editColumnModal = (annotationId) ->
@@ -761,7 +762,11 @@ angular.module 'weaver',
   restrict: 'E'
   link: (scope, element) ->
 
+    # directive attributes
     view = scope.entity
+    dataset = scope.dataset
+
+
     viewTableService = new ViewTableService(view)
 
     editColumnModal = (filterId) ->
@@ -772,17 +777,86 @@ angular.module 'weaver',
         templateUrl: 'addFilter.ng.html'
         controller: ($scope) ->
 
-          $scope.operations = ['any value','exact value','regex','-','min. card','max. card']
+
+          operationsString = {
+            'any value': 'none'
+            'exact value': 'string'
+            'regex': 'string'
+            '-1': '-'
+            'min. card': 'string'
+            'max. card': 'string'
+          }
+          operationsObject = {
+            'any object':'none'
+            'this object':'object'
+            'not this object':'object'
+            '-1':'-'
+            'all from view':'view'
+            'at least one from view':'view'
+            'none from view':'view'
+            '-2':'-'
+            'min. card':'string'
+            'max. card':'string'
+          }
 
           $scope.title = 'Add filter'
           $scope.filterName = filter.label
           $scope.filterType = filter.celltype
-          $scope.conditions = filter.conditions
 
+          $scope.filterTypeString = (filter.celltype is 'string')
+          $scope.filterTypeObject = (filter.celltype is 'object')
+
+
+          $scope.operations = operationsString # default
+          if $scope.filterTypeObject
+            $scope.operations = operationsObject
+
+          $scope.conditions = filter.conditions
+          $scope.objects = dataset.objects.$links()
+          $scope.views = dataset.views.$links()
+
+
+
+
+
+
+
+          $scope.switchToString = ->
+            if $scope.filterTypeObject
+              $scope.filterTypeObject = false
+              $scope.filterTypeString = true
+              $scope.filterType = 'string'
+              $scope.operations = operationsString
+              $scope.removeCondition(condition) for key, condition of $scope.conditions.$links()
+              if((key for key of $scope.conditions.$links()).length < 1)
+                $scope.addCondition()
+
+
+
+          $scope.switchToObject = ->
+            if $scope.filterTypeString
+              $scope.filterTypeString = false
+              $scope.filterTypeObject = true
+              $scope.filterType = 'object'
+              $scope.operations = operationsObject
+              $scope.removeCondition(condition) for key, condition of $scope.conditions.$links()
+              if((key for key of $scope.conditions.$links()).length < 1)
+                $scope.addCondition()
+
+
+
+
+
+            
 
           $scope.addCondition = ->
-            condition = Weaver.add({predicate:'',operation:$scope.operations[0],value:''}, '$CONDITION')
+            if $scope.filterTypeString
+              condition = Weaver.add({predicate:'', operation: 'any value', value:'', conditiontype:'string'}, '$CONDITION')
+            else if $scope.filterTypeObject
+              condition = Weaver.add({predicate:'', operation: 'any object', value:'', conditiontype:'object'}, '$CONDITION')
+
             $scope.conditions.$push(condition)
+
 
           $scope.removeCondition = (condition) ->
             $scope.conditions.$remove(condition.$id())
@@ -790,8 +864,9 @@ angular.module 'weaver',
             if((key for key of $scope.conditions.$links()).length < 1)
               $scope.addCondition()
 
-          if((key for key of $scope.conditions.$links()).length < 1)
-            $scope.addCondition()
+
+
+
 
 
 
@@ -806,9 +881,37 @@ angular.module 'weaver',
               filter.$push('celltype', $scope.filterType)
 
               for key, condition of $scope.conditions.$links()
+
                 condition.$push('predicate')
                 condition.$push('operation')
-                condition.$push('value')
+
+                if condition.conditiontype is 'object'
+
+
+                  operationType = operationsObject[condition.operation]
+                  console.log(operationType)
+
+                  if operationType is 'none'
+                    # do nothing
+
+                  else if operationType is 'object'
+                    condition.$push('object')     # todo, should be an entity?
+                    console.log(condition)
+
+                  else if operationType is 'view'
+                    condition.$push('view')       # todo, should be an entity?
+                    console.log(condition)
+
+
+
+                if condition.conditiontype is 'string'
+
+
+
+                  operationType = operationsString[condition.operation]
+                  console.log(operationType)
+
+                  condition.$push('value')
 
               view.$refresh = true
               $timeout((-> view.$refresh = false), 1)
@@ -977,7 +1080,7 @@ angular.module 'weaver',
       # Create condition list
       filter.conditions = Weaver.collection()
       filter.$push('conditions')
-      condition = Weaver.add({predicate:'',operation:'any value',value:''}, '$CONDITION')
+      condition = Weaver.add({predicate:'', operation:'any value', value:'', conditiontype:'string'}, '$CONDITION')
       filter.conditions.$push(condition)
 
       @view.filters.$push(filter)

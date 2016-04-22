@@ -4,6 +4,9 @@
 @import "bower_components/bootstrap/less/bootstrap.less";
 
 //noinspection CssUnknownTarget
+@import "bower_components/nya-bootstrap-select/less/nya-bs-select.less";
+
+//noinspection CssUnknownTarget
 @import "bower_components/font-awesome/less/font-awesome.less";
 
 // Inline is important for CSS files due to CSS minification, it actually compiles in to this file
@@ -74,12 +77,42 @@ body {
 
 
 
+// misused to set nya select
+.btn-info {
+  .button-variant(@btn-default-color; @btn-default-bg; @btn-default-border);
+  border-radius: 0px;
+  border-right: 0px solid #ccc;
+}
+
 #data-workbench {
   display: table;
   width:100%;
 }
 
-
+.wv-cutoff-corners {
+  border-radius: 0px;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  border-left: 0px solid #ccc;
+  border-right: 0px solid #ccc;
+  background-color: white;
+}
+.wv-cutoff-left-corner {
+  border-radius: 0px;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  border-left: 0px solid #ccc;
+  border-right: 1px solid #ccc;
+  background-color: white;
+}
+.wv-cutoff-right-corner {
+  border-radius: 0px;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  border-right: 0px solid #ccc;
+  background-color: white;
+}
 
 
 #trees-section {
