@@ -885,33 +885,25 @@ angular.module 'weaver',
                 condition.$push('predicate')
                 condition.$push('operation')
 
+                # determine operation type
+                operationType = 'none'
                 if condition.conditiontype is 'object'
-
-
                   operationType = operationsObject[condition.operation]
-                  console.log(operationType)
-
-                  if operationType is 'none'
-                    # do nothing
-
-                  else if operationType is 'object'
-                    condition.$push('object')     # todo, should be an entity?
-                    console.log(condition)
-
-                  else if operationType is 'view'
-                    condition.$push('view')       # todo, should be an entity?
-                    console.log(condition)
-
-
-
                 if condition.conditiontype is 'string'
-
-
-
                   operationType = operationsString[condition.operation]
-                  console.log(operationType)
 
+                # act on the operation type
+                if operationType is 'none'
+                  # do nothing
+
+                else if operationType is 'string'
                   condition.$push('value')
+
+                else if operationType is 'object'
+                  condition.$push('object')
+
+                else if operationType is 'view'
+                  condition.$push('view')
 
               view.$refresh = true
               $timeout((-> view.$refresh = false), 1)
