@@ -490,6 +490,7 @@ angular.module 'weaver',
               annotation = objectTableService.getAnnotationById(changeAnnotationId)
               property = objectTableService.getProperty(changeRow, changeAnnotationId)
 
+
               # annotation should exist
               if not annotation?
                 console.error('annotation not found for '+changeAnnotationId)
@@ -506,7 +507,6 @@ angular.module 'weaver',
                 else if property? and changeNewValue isnt changeOldValue
                   console.log('edit')
 
-
                   if property.$type() is '$VALUE_PROPERTY'
                     newRow = objectTableService.updateProperty(property, changeNewValue)
 
@@ -516,14 +516,15 @@ angular.module 'weaver',
 
 
                 # create new property
-                else if not property?
+                else if annotation? and not property?
                   console.log('new property')
 
                   table.setDataAtRowProp(changeRow, changeAnnotationId, '', 'override')
-                  if property.$type() is '$VALUE_PROPERTY'
+
+                  if annotation.celltype is 'string'
                     newRow = objectTableService.newProperty(annotation, changeNewValue)
 
-                  else if property.$type() is '$OBJECT_PROPERTY'
+                  else if annotation.celltype is 'object'
                     toObject = findObjectByName(changeNewValue)
                     newRow = objectTableService.newProperty(annotation, toObject)
 

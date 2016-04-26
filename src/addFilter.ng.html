@@ -22,7 +22,7 @@
     <input type="text" class="form-control" name="x" placeholder="predicate" ng-model="condition.predicate">
     <div class="input-group-btn search-panel">
       <button type="button" class="btn btn-default dropdown-toggle wv-cutoff-corners" data-toggle="dropdown">
-        <span id="search_concept">{{condition.operation.label}}</span> <span class="caret"></span>
+        <span id="search_concept">{{condition.operation}}</span> <span class="caret"></span>
       </button>
       <ul class="dropdown-menu" role="menu">
         <li ng-repeat="(label, selector) in operations track by $index" ng-class="{divider:selector=='-'}">
