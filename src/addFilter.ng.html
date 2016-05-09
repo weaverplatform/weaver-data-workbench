@@ -5,21 +5,25 @@
 
   <div class="input-group">
     <span class="input-group-addon">Name:</span>
-    <input type="text" class="form-control" ng-model="filterName">
+    <input type="text" class="form-control" placeholder="description" ng-model="filterName">
   </div>
 
   <div class="input-group">
-    <span class="input-group-addon">Object type:</span>
+    <span class="input-group-addon">Predicate:</span>
+    <input type="text" class="form-control" placeholder="description" ng-model="filterPredicate">
+  </div>
+
+  <div class="input-group">
+    <span class="input-group-addon">Individual type:</span>
     <div class="input-group-btn" style="width:100%;">
       <button type="button" class="btn btn-default half" ng-click="switchToString()" ng-class="{active:filterTypeString}">String</button>
-      <button type="button" class="btn btn-default half" ng-click="switchToObject()" ng-class="{active:filterTypeObject}">Object</button>
+      <button type="button" class="btn btn-default half" ng-click="switchToObject()" ng-class="{active:filterTypeObject}">Individual</button>
     </div>
   </div>
 
   <div class="input-group" ng-repeat="condition in conditions">
 
     <span class="input-group-addon">Filter:</span>
-    <input type="text" class="form-control" name="x" placeholder="predicate" ng-model="condition.predicate">
     <div class="input-group-btn search-panel">
       <button type="button" class="btn btn-default dropdown-toggle wv-cutoff-corners" data-toggle="dropdown">
         <span id="search_concept">{{condition.operation}}</span> <span class="caret"></span>
@@ -38,7 +42,7 @@
     <span ng-show="operations[condition.operation]=='string'" style="width:40%;">
       <input type="text" class="form-control" name="x" placeholder="value" ng-model="condition.value">
     </span>
-    <ol class="nya-bs-select btn-info" ng-model="condition.object" data-live-search="true" ng-show="operations[condition.operation]=='object'" style="display: block;">
+    <ol class="nya-bs-select btn-info" ng-model="condition.individual" data-live-search="true" ng-show="operations[condition.operation]=='individual'" style="display: block;">
       <li nya-bs-option="object in objects track by object.$id()">
         <a>
           {{ object.name }}
