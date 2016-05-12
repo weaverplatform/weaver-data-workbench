@@ -110,14 +110,13 @@ angular.module 'weaver',
     object.$push('properties')
 
 
-    # todo: investigate how to push the object
-    property = Weaver.add({subject: object.$id(), predicate: 'rdfs:label', value: 'Unnamed'}, '$VALUE_PROPERTY')
-#    property.$push('subject', object)
+    property = Weaver.add({subject: object, predicate: 'rdfs:label', object: 'Unnamed'}, '$VALUE_PROPERTY')
+
     property.$push('annotation', annotation)
     object.properties.$push(property)
 
 
-    
+
     # Open by default
     $scope.openTabs.push(object)
     $scope.activeTab = object
@@ -632,7 +631,7 @@ angular.module 'weaver',
 
       # set data
       if property.$type() is '$VALUE_PROPERTY'
-        @data[@nextRow[annotationId]][annotationId] = property.value
+        @data[@nextRow[annotationId]][annotationId] = property.object
       if property.$type() is '$INDIVIDUAL_PROPERTY' and property.object?
         @data[@nextRow[annotationId]][annotationId] = property.object.name
 
@@ -663,7 +662,7 @@ angular.module 'weaver',
 
       # set data
       if property.$type() is '$VALUE_PROPERTY'
-        @data[@nextRow[annotationId]][annotationId] = property.value
+        @data[@nextRow[annotationId]][annotationId] = property.object
       if property.$type() is '$INDIVIDUAL_PROPERTY' and property.object?
         @data[@nextRow[annotationId]][annotationId] = property.object.name
 
@@ -680,15 +679,12 @@ angular.module 'weaver',
 
       if annotation.celltype is 'string'
 
-        property = Weaver.add({subject: @object.$id(), predicate: annotation.label, value: value}, '$VALUE_PROPERTY')
-#        property.$push('subject', @object)
+        property = Weaver.add({subject: @object, predicate: annotation.label, object: value}, '$VALUE_PROPERTY')
         property.$push('annotation', annotation)
 
       if annotation.celltype is 'individual'
 
-        property = Weaver.add({subject: @object.$id(), predicate: annotation.label, object: value.$id()}, '$INDIVIDUAL_PROPERTY')
-#        property.$push('subject', @object)
-#        property.$push('object', value)
+        property = Weaver.add({subject: @object, predicate: annotation.label, object: value}, '$INDIVIDUAL_PROPERTY')
         property.$push('annotation', annotation)
 
       if not property?
@@ -706,7 +702,7 @@ angular.module 'weaver',
     updateProperty: (property, value) ->
 
       if property.$type() is '$VALUE_PROPERTY'
-        property.$push('value', value)
+        property.$push('object', value)
       if property.$type() is '$INDIVIDUAL_PROPERTY'
         property.$push('object', value)
 
@@ -862,7 +858,7 @@ angular.module 'weaver',
               if $scope.filterTypeString
                 condition = Weaver.add({operation: 'any value', value:'', conditiontype:'string'}, '$CONDITION')
               else if $scope.filterTypeObject
-                condition = Weaver.add({operation: 'any object', individual:'', conditiontype:'individual'}, '$CONDITION')
+                condition = Weaver.add({operation: 'any individual', individual:'', conditiontype:'individual'}, '$CONDITION')
 
               $scope.conditions.$push(condition)
 
@@ -1089,6 +1085,13 @@ angular.module 'weaver',
     # returns row where the property is placed
     addObject: (object) ->
 
+      if not object.$type() is '$INDIVIDUAL'
+        return
+
+      if not object.properties?
+        console.error('individual has no properties')
+        return
+
       @objectMap.push(object)
       row = @objectMap.length-1
 
@@ -1113,7 +1116,7 @@ angular.module 'weaver',
 
           # set data
           if property.$type() is '$VALUE_PROPERTY'
-            @data[row][filterId] = property.value
+            @data[row][filterId] = property.object
           if property.$type() is '$INDIVIDUAL_PROPERTY' and property.object?
 
             # todo, this is inefficient, search through all objects
