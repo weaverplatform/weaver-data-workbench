@@ -17,7 +17,10 @@ angular.module 'weaver',
   ]
 
 #.constant('SERVER_ADDRESS', 'https://weaver-server.herokuapp.com')
-.constant('SERVER_ADDRESS', 'http://localhost:9487')
+#.constant('SERVER_ADDRESS', 'http://localhost:9487')
+.constant('SERVER_ADDRESS', 'http://192.168.99.100:9487')
+#.constant('SERVER_ADDRESS', 'http://weaver.test.ib.weaverplatform.com')
+#.constant('SERVER_ADDRESS', 'http://sysunite.com:21787/')
 
 # Configuration
 .config(($urlRouterProvider, $stateProvider) ->
@@ -140,7 +143,7 @@ angular.module 'weaver',
     # Create condition list
     filter.conditions = Weaver.collection()
     filter.$push('conditions')
-    condition = Weaver.add({operation:'any value', value:'', conditiontype:'string'}, '$CONDITION')
+    condition = Weaver.add({operation:'any-value', value:'', conditiontype:'string'}, '$CONDITION')
     filter.conditions.$push(condition)
 
     view.filters.$push(filter)
@@ -180,7 +183,7 @@ angular.module 'weaver',
       # Create condition list
       filter.conditions = Weaver.collection()
       filter.$push('conditions')
-      condition = Weaver.add({operation:'any value', value:'', conditiontype:'string'}, '$CONDITION')
+      condition = Weaver.add({operation:'any-value', value:'', conditiontype:'string'}, '$CONDITION')
       filter.conditions.$push(condition)
 
       entity.filters.$push(filter)
@@ -783,24 +786,24 @@ angular.module 'weaver',
 
 
             operationsString = {
-              'any value': 'none'
-              'exact value': 'string'
+              'any-value': 'none'
+              'exact-value': 'string'
               'regex': 'string'
               '-1': '-'
-              'min. card': 'string'
-              'max. card': 'string'
+              'min-card': 'string'
+              'max-card': 'string'
             }
             operationsObject = {
-              'any object':'none'
-              'this object':'individual'
-              'not this object':'individual'
+              'any-individual':'none'
+              'this-individual':'individual'
+              'not-this-individual':'individual'
               '-1':'-'
-              'all from view':'view'
-              'at least one from view':'view'
-              'none from view':'view'
+              'all-from-view':'view'
+              'at-least-one-from-view':'view'
+              'none-from-view':'view'
               '-2':'-'
-              'min. card':'string'
-              'max. card':'string'
+              'min-card':'string'
+              'max-card':'string'
             }
 
             $scope.title = 'Add filter'
@@ -856,9 +859,9 @@ angular.module 'weaver',
 
             $scope.addCondition = ->
               if $scope.filterTypeString
-                condition = Weaver.add({operation: 'any value', value:'', conditiontype:'string'}, '$CONDITION')
+                condition = Weaver.add({operation: 'any-value', value:'', conditiontype:'string'}, '$CONDITION')
               else if $scope.filterTypeObject
-                condition = Weaver.add({operation: 'any individual', individual:'', conditiontype:'individual'}, '$CONDITION')
+                condition = Weaver.add({operation: 'any-individual', individual:'', conditiontype:'individual'}, '$CONDITION')
 
               $scope.conditions.$push(condition)
 
@@ -902,7 +905,7 @@ angular.module 'weaver',
                     # do nothing
 
                   else if operationType is 'string'
-                    condition.$push('value')
+                    condition.$push('string')
 
                   else if operationType is 'individual'
                     condition.$push('individual')
@@ -1073,7 +1076,7 @@ angular.module 'weaver',
       # Create condition list
       filter.conditions = Weaver.collection()
       filter.$push('conditions')
-      condition = Weaver.add({predicate:'rdfs:label', operation:'any value', value:'', conditiontype:'string'}, '$CONDITION')
+      condition = Weaver.add({predicate:'rdfs:label', operation:'any-value', value:'', conditiontype:'string'}, '$CONDITION')
       filter.conditions.$push(condition)
 
       @view.filters.$push(filter)
