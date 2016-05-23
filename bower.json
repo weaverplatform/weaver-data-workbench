@@ -38,10 +38,12 @@
     "underscore": "~1.8.3",
     "weaver-sdk": "*",
     "x-editable": "~1.5.1",
-    "nya-bootstrap-select": "^2.1.5"
+    "nya-bootstrap-select": "^2.1.5",
+    "select2": "^4.0.2"
   },
   "resolutions": {
     "bootstrap": "~3.3.5",
-    "jquery": "1.9.1 - 2"
+    "jquery": "1.9.1 - 2",
+    "angular": "1.5.5"
   }
 }
