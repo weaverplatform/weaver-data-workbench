@@ -3,6 +3,8 @@
 # Weaver Angular module
 angular.module 'weaver',
   [
+    'config'
+
     # Angular core modules
     'ngAnimate'
     'ngTouch'
@@ -15,12 +17,6 @@ angular.module 'weaver',
     'xeditable'       # In place editing of fields
     'nya.bootstrap.select'
   ]
-
-#.constant('SERVER_ADDRESS', 'https://weaver-server.herokuapp.com')
-#.constant('SERVER_ADDRESS', 'http://localhost:9487')
-.constant('SERVER_ADDRESS', 'http://192.168.99.100:9487')
-#.constant('SERVER_ADDRESS', 'http://weaver.test.ib.weaverplatform.com')
-#.constant('SERVER_ADDRESS', 'http://sysunite.com:21787/')
 
 # Configuration
 .config(($urlRouterProvider, $stateProvider) ->
@@ -38,8 +34,9 @@ angular.module 'weaver',
     }
 )
 
-.factory('Weaver', ($window, SERVER_ADDRESS) ->
-  $window.weaver = new $window.Weaver().connect(SERVER_ADDRESS)
+.factory('Weaver', ($window, WEAVER_ADDRESS) ->
+  console.log 'Connecting to weaver'  + WEAVER_ADDRESS
+  $window.weaver = new $window.Weaver().connect(WEAVER_ADDRESS)
   $window.weaver
 )
 
