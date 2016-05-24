@@ -171,9 +171,9 @@ module.exports = (grunt) ->
         name: 'config'
         dest: 'dist/config.js'
         constants:
-          weaver_address: process.env.WEAVER_ADDRESS or 'http://192.168.99.100:9487/'
-          weaver_host: process.env.WEAVER_HOST or '192.168.99.100'
-          weaver_port: process.env.WEAVER_PORT or '9487'
+          WEAVER_ADDRESS: process.env.WEAVER_ADDRESS or 'http://192.168.99.100:9487/'
+          WEAVER_HOST: process.env.WEAVER_HOST or '192.168.99.100'
+          WEAVER_PORT: process.env.WEAVER_PORT or '9487'
       default: {}
 
   

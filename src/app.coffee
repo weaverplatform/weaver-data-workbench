@@ -3,8 +3,6 @@
 # Weaver Angular module
 angular.module 'weaver',
   [
-    'config'
-
     # Angular core modules
     'ngAnimate'
     'ngTouch'
@@ -16,6 +14,8 @@ angular.module 'weaver',
     'treeControl'     # Tree of objects
     'xeditable'       # In place editing of fields
     'nya.bootstrap.select'
+
+    'config'
   ]
 
 # Configuration
@@ -35,7 +35,6 @@ angular.module 'weaver',
 )
 
 .factory('Weaver', ($window, WEAVER_ADDRESS) ->
-  console.log 'Connecting to weaver'  + WEAVER_ADDRESS
   $window.weaver = new $window.Weaver().connect(WEAVER_ADDRESS)
   $window.weaver
 )
@@ -58,7 +57,7 @@ angular.module 'weaver',
 )
 
 
-.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, ObjectTableService, ViewTableService, $uibModal, dataset, $timeout, SERVER_ADDRESS ) ->
+.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, ObjectTableService, ViewTableService, $uibModal, dataset, $timeout, WEAVER_ADDRESS ) ->
 
   # Init objects
   if not dataset.objects?
