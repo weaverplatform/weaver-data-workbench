@@ -68,7 +68,7 @@ angular.module 'weaver',
     dataset.$push('views')
 
   $scope.downloadTurtle = ->
-    url = SERVER_ADDRESS + "/turtle?id=" + $scope.dataset.$id()
+    url = WEAVER_ADDRESS + "/turtle?id=" + $scope.dataset.$id()
     $window.location.href = url
     return true
 
