@@ -14,13 +14,9 @@ angular.module 'weaver',
     'treeControl'     # Tree of objects
     'xeditable'       # In place editing of fields
     'nya.bootstrap.select'
-  ]
 
-#.constant('SERVER_ADDRESS', 'https://weaver-server.herokuapp.com')
-#.constant('SERVER_ADDRESS', 'http://localhost:9487')
-.constant('SERVER_ADDRESS', 'http://192.168.99.100:9487')
-#.constant('SERVER_ADDRESS', 'http://weaver.test.ib.weaverplatform.com')
-#.constant('SERVER_ADDRESS', 'http://sysunite.com:21787/')
+    'config'
+  ]
 
 # Configuration
 .config(($urlRouterProvider, $stateProvider) ->
@@ -38,8 +34,8 @@ angular.module 'weaver',
     }
 )
 
-.factory('Weaver', ($window, SERVER_ADDRESS) ->
-  $window.weaver = new $window.Weaver().connect(SERVER_ADDRESS)
+.factory('Weaver', ($window, WEAVER_ADDRESS) ->
+  $window.weaver = new $window.Weaver().connect(WEAVER_ADDRESS)
   $window.weaver
 )
 
@@ -61,7 +57,7 @@ angular.module 'weaver',
 )
 
 
-.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, ObjectTableService, ViewTableService, $uibModal, dataset, $timeout, SERVER_ADDRESS ) ->
+.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, ObjectTableService, ViewTableService, $uibModal, dataset, $timeout, WEAVER_ADDRESS ) ->
 
   # Init objects
   if not dataset.objects?
@@ -72,7 +68,7 @@ angular.module 'weaver',
     dataset.$push('views')
 
   $scope.downloadTurtle = ->
-    url = SERVER_ADDRESS + "/turtle?id=" + $scope.dataset.$id()
+    url = WEAVER_ADDRESS + "/turtle?id=" + $scope.dataset.$id()
     $window.location.href = url
     return true
 

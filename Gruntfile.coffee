@@ -166,7 +166,16 @@ module.exports = (grunt) ->
       files: 
         src: ['src/**/*.html', 'src/**/*.ng.html']
     
-    
+    ngconstant:
+      options:
+        name: 'config'
+        dest: 'dist/config.js'
+        constants:
+          WEAVER_ADDRESS: process.env.WEAVER_ADDRESS or 'http://192.168.99.100:9487/'
+          WEAVER_HOST: process.env.WEAVER_HOST or '192.168.99.100'
+          WEAVER_PORT: process.env.WEAVER_PORT or '9487'
+      default: {}
+
   
     ngtemplates: 
       main: 
@@ -266,9 +275,9 @@ module.exports = (grunt) ->
         ]
   )
 
-  grunt.registerTask('default', ['clean:after', 'coffee', 'connect', 'watch'])
+  grunt.registerTask('default', ['ngconstant', 'clean:after', 'coffee', 'connect', 'watch'])
   grunt.registerTask('wire', ['wiredep'])
-  grunt.registerTask('build',['clean:before', 'coffeelint', 'coffee','less', 'htmlangular', 'dom_munger','ngtemplates','cssmin','concat','ngAnnotate','copy:main', 'copy:weaver', 'htmlmin','imagemin','clean:after'])
+  grunt.registerTask('build',['clean:before', 'coffeelint', 'coffee','less', 'htmlangular', 'dom_munger','ngtemplates','ngconstant','cssmin','concat','ngAnnotate','copy:main', 'copy:weaver', 'htmlmin','imagemin','clean:after'])
 
 
 
