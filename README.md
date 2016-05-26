@@ -1,4 +1,4 @@
-# weaver-data-workbench
+# weaver-workbench-data
 Visual application to model Weaver datasets
 
 ## Running
