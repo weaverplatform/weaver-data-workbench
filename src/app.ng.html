@@ -89,8 +89,8 @@
 
 
         </div>
-        <object-table ng-if="entity.$type()=='$INDIVIDUAL' && !entity.$refresh" entity="entity" dataset="dataset" />
-        <view-table ng-if="entity.$type()=='$VIEW' && !entity.$refresh" entity="entity" dataset="dataset"/>
+        <object-table ng-if="entity.$type()=='$INDIVIDUAL' && !entity.$refresh" entity="entity" dataset="dataset" ></object-table>
+          <view-table ng-if="entity.$type()=='$VIEW' && !entity.$refresh" entity="entity" dataset="dataset"></view-table>
       </div>
     </div>
   </div>
