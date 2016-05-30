@@ -89,10 +89,22 @@ angular.module 'weaver',
   readAllViews()
 
   # Adds a new object to the dataset
-  $scope.addObject = ->
-    
+  $scope.addIndividualWithId = ->
+    preferredId = prompt('Please specify the id:')
+    @addIndividual(preferredId)
+
+  # Adds a new object to the dataset
+  $scope.addIndividual = (preferredId) ->
+
     # Create object and add to dataset
-    object = Weaver.add({name: 'Unnamed'}, '$INDIVIDUAL')
+    if(preferredId?)
+      object = Weaver.add({name: 'Unnamed'}, '$INDIVIDUAL', preferredId)
+
+    else
+      object = Weaver.add({name: 'Unnamed'}, '$INDIVIDUAL')
+
+    # Create object and add to dataset
+
     $scope.dataset.objects.$push(object)
 
     
