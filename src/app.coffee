@@ -327,8 +327,21 @@ angular.module 'weaver',
               $scope.columnType = annotation.celltype
               
               $scope.delete = ->
-                console.log('not implemented yet, will delete annotation')
-                $scope.$close()
+
+                # check if this is annotation has any properties
+                if objectTableService.getPropertiesForAnnotationId(annotationId).length > 0
+                  window.alert('cannot be deleted, there are still properties')
+                else
+
+                  object.annotations.$remove(annotation)
+                  # todo actually remove the annotation object
+    
+                  # refresh the table
+                  object.$refresh = true
+                  $timeout((-> object.$refresh = false), 1)
+                
+                  
+                  $scope.$close()
 
               $scope.ok = ->
 
@@ -585,6 +598,14 @@ angular.module 'weaver',
           @addProperty(annotation, property)
         else
           @addUnannotatedProperty(property)
+          
+    getPropertiesForAnnotationId: (id) ->
+      result = []
+      for rowId, row of @propertyMap
+        for annotationId, property of row when annotationId is id
+          result.push(property) 
+      return result
+      
 
     getColumns: ->
       annotations = []
@@ -887,7 +908,14 @@ angular.module 'weaver',
                 
 
             $scope.delete = ->
-              console.log('not implemented yet, will delete filter')
+
+              view.filters.$remove(filter)
+              # todo actually remove the filter object and its conditions from redis
+
+              # refresh the table
+              view.$refresh = true
+              $timeout((-> view.$refresh = false), 1)
+              
               $scope.$close()
 
 
