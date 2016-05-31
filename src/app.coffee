@@ -887,7 +887,7 @@ angular.module 'weaver',
                 
 
             $scope.delete = ->
-              console.log('not implemented yet, will delete annotation')
+              console.log('not implemented yet, will delete filter')
               $scope.$close()
 
 
