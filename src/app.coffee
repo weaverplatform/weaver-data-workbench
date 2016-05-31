@@ -325,6 +325,10 @@ angular.module 'weaver',
               $scope.title = 'Add column'
               $scope.columnName = annotation.label
               $scope.columnType = annotation.celltype
+              
+              $scope.delete = ->
+                console.log('not implemented yet, will delete annotation')
+                $scope.$close()
 
               $scope.ok = ->
 
@@ -342,11 +346,11 @@ angular.module 'weaver',
                   object.$refresh = true
                   $timeout((-> object.$refresh = false), 1)
 
-                $scope.$close();
+                $scope.$close()
 
               $scope.cancel = ->
                 # clean
-                $scope.$close();
+                $scope.$close()
 
             size: 'sm'
           })
@@ -879,13 +883,12 @@ angular.module 'weaver',
 
               if((key for key of $scope.conditions.$links()).length < 1)
                 $scope.addCondition()
+                
+                
 
-
-
-
-
-
-
+            $scope.delete = ->
+              console.log('not implemented yet, will delete annotation')
+              $scope.$close()
 
 
             $scope.ok = ->
@@ -924,12 +927,12 @@ angular.module 'weaver',
                 view.$refresh = true
                 $timeout((-> view.$refresh = false), 1)
 
-              $scope.$close();
+              $scope.$close()
 
             $scope.cancel = ->
 
               # clean
-              $scope.$close();
+              $scope.$close()
 
           size: 'md'
         })
