@@ -138,7 +138,7 @@ angular.module 'weaver',
   $scope.addView = ->
 
     # Create object and add to dataset
-    view = Weaver.add({name: 'Unnamed'}, '$VIEW')
+    view = Weaver.add({name: 'Unnamed'}, '$VIEW')       
     $scope.dataset.views.$push(view)
 
 
@@ -944,9 +944,10 @@ angular.module 'weaver',
                     # do nothing
 
                   else if operationType is 'string'
-                    condition.$push('string')
+                    condition.$push('value')
 
                   else if operationType is 'individual'
+                    condition.individual =  condition.individualEntity.$id()
                     condition.$push('individual')
 
                   else if operationType is 'view'
@@ -1131,7 +1132,8 @@ angular.module 'weaver',
         return
 
       if not object.properties?
-        console.error('individual has no properties')
+        console.error('individual has no properties:')
+        console.error(object)
         return
 
       @objectMap.push(object)
@@ -1149,7 +1151,6 @@ angular.module 'weaver',
     addProperty: (property, row) ->
 
       predicate = property.predicate
-
       for filterId, filter of @filterMap
         if filter.predicate is predicate
 
@@ -1160,13 +1161,7 @@ angular.module 'weaver',
           if property.$type() is '$VALUE_PROPERTY'
             @data[row][filterId] = property.object
           if property.$type() is '$INDIVIDUAL_PROPERTY' and property.object?
-
-            # todo, this is inefficient, search through all objects
-            @data[row][filterId] = object.name for id, object of @scope.dataset.objects.$links() when id is property.object
-
-
-
-
+            @data[row][filterId] = property.object.name 
 
 
 

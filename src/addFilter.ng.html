@@ -42,7 +42,7 @@
     <span ng-show="operations[condition.operation]=='string'" style="width:40%;">
       <input type="text" class="form-control" name="x" placeholder="value" ng-model="condition.value">
     </span>
-    <ol class="nya-bs-select btn-info" ng-model="condition.individual" data-live-search="true" ng-show="operations[condition.operation]=='individual'" style="display: block;">
+    <ol class="nya-bs-select btn-info" ng-model="condition.individualEntity" data-live-search="true" ng-show="operations[condition.operation]=='individual'" style="display: block;">
       <li nya-bs-option="object in objects track by object.$id()">
         <a>
           {{ object.name }}
