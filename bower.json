@@ -1,6 +1,6 @@
 {
   "name": "weaver-dataset-workbench",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "main": "index.html",
   "ignore": [
     "**/.*",
@@ -25,7 +25,7 @@
     "bluebird": "~3.4.1",
     "bootstrap": "~3.3.5",
     "chronicle": "~1.0.10",
-    "cuid": "~1.2.4",
+    "cuid": "~1.3.8",
     "fingerprintjs2": "~0.1.4",
     "font-awesome": "~4.4.0",
     "handsontable": "~0.25.1",
