@@ -63,9 +63,12 @@ angular.module 'weaver',
   if not dataset.objects?
     dataset.objects = Weaver.collection()
     dataset.$push('objects')
-  if not dataset.views?
-    dataset.views = Weaver.collection()
-    dataset.$push('views')
+  if not dataset.predicates?
+    dataset.predicates = Weaver.collection()
+    dataset.$push('predicates')
+  if not dataset.models?
+    dataset.models = Weaver.collection()
+    dataset.$push('models')
 
   $scope.downloadTurtle = ->
     url = WEAVER_ADDRESS + "/turtle?id=" + $scope.dataset.$id()
@@ -81,10 +84,18 @@ angular.module 'weaver',
   readAllObjects()
 
 
+  $scope.allPredicates = []
+
+  readAllPredicates = ->
+    $scope.allPredicates = (view for id, view of $scope.dataset.predicates.$links())
+
+  readAllPredicates()
+
+
   $scope.allViews = []
 
   readAllViews = ->
-    $scope.allViews = (view for id, view of $scope.dataset.views.$links())
+    $scope.allViews = (view for id, view of $scope.dataset.models.$links())
 
   readAllViews()
 
@@ -98,16 +109,14 @@ angular.module 'weaver',
 
     # Create object and add to dataset
     if(preferredId?)
-      object = Weaver.add({name: 'Unnamed'}, '$INDIVIDUAL', preferredId)
+      object = Weaver.add({name: 'Unnamed Individual'}, '$INDIVIDUAL', preferredId)
 
     else
-      object = Weaver.add({name: 'Unnamed'}, '$INDIVIDUAL')
+      object = Weaver.add({name: 'Unnamed Individual'}, '$INDIVIDUAL')
 
     # Create object and add to dataset
-
     $scope.dataset.objects.$push(object)
 
-    
     # Create first annotation
     object.annotations = Weaver.collection()
     object.$push('annotations')
@@ -115,31 +124,28 @@ angular.module 'weaver',
     annotation = Weaver.add({label: 'rdfs:label', celltype: 'string'}, '$ANNOTATION')
     object.annotations.$push(annotation)
 
-
     # Create first property
     object.properties = Weaver.collection()
     object.$push('properties')
-
 
     property = Weaver.add({subject: object, predicate: 'rdfs:label', object: 'Unnamed'}, '$VALUE_PROPERTY')
 
     property.$push('annotation', annotation)
     object.properties.$push(property)
 
-
-
     # Open by default
     $scope.openTabs.push(object)
     $scope.activeTab = object
     readAllObjects()
+    readAllPredicates()
     readAllViews()
 
   # Adds a new object to the dataset
   $scope.addView = ->
 
     # Create object and add to dataset
-    view = Weaver.add({name: 'Unnamed'}, '$VIEW')       
-    $scope.dataset.views.$push(view)
+    view = Weaver.add({name: 'Unnamed View'}, '$VIEW')
+    $scope.dataset.models.$push(view)
 
 
     # Create filters view
@@ -160,14 +166,25 @@ angular.module 'weaver',
     view.objects = Weaver.collection()
     view.$push('objects')
 
-
-
-
-
     # Open by default
     $scope.openTabs.push(view)
     $scope.activeTab = view
     readAllObjects()
+    readAllPredicates()
+    readAllViews()
+
+  # Adds a new object to the dataset
+  $scope.addPredicate = ->
+
+    # Create object and add to dataset
+    predicate = Weaver.add({name: 'Unnamed Predicate'}, '$PREDICATE')
+    $scope.dataset.predicates.$push(predicate)
+
+    # Open by default
+    $scope.openTabs.push(predicate)
+    $scope.activeTab = predicate
+    readAllObjects()
+    readAllPredicates()
     readAllViews()
 
     
@@ -212,13 +229,13 @@ angular.module 'weaver',
     $scope.closeTab(view)
     location = $scope.allViews.indexOf(view)
     $scope.allViews.splice(location, 1)
-    $scope.dataset.views.$remove(view)
+    $scope.dataset.models.$remove(view)
     view.$destroy()
 
     
 
 
-  $scope.activeTree = 'data'
+  $scope.activeTree = 'individual'
   $scope.selectView = (viewName) ->
     $scope.activeTree = viewName
 
@@ -239,7 +256,7 @@ angular.module 'weaver',
     }
   }
 
-  $scope.viewTreeOptions = {
+  $scope.predicateTreeOptions = {
     injectClasses: {
       ul: "b1"
       li: "b2"
@@ -249,6 +266,19 @@ angular.module 'weaver',
       iLeaf: "b5"
       label: "b6"
       labelSelected: "b8"
+    }
+  }
+
+  $scope.viewTreeOptions = {
+    injectClasses: {
+      ul: "c1"
+      li: "c2"
+      liSelected: "c7"
+      iExpanded: "c3"
+      iCollapsed: "c4"
+      iLeaf: "c5"
+      label: "c6"
+      labelSelected: "c8"
     }
   }
 
@@ -303,6 +333,34 @@ angular.module 'weaver',
 
 
 
+.directive('predicateTable', ($uibModal, $timeout) ->
+  {
+    restrict: 'E'
+    link: (scope, element) ->
+
+      predicate = scope.entity
+      dataset = scope.dataset
+
+      tableElement = element[0]
+
+      containerDiv = document.createElement('div')
+      containerDiv.innerHTML = '<br/><br/><br/><br/>'
+      element[0].appendChild(containerDiv)
+  }
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
 .directive('objectTable', (ObjectTableService, $uibModal, $timeout) ->
   {
     restrict: 'E'
@@ -325,7 +383,7 @@ angular.module 'weaver',
               $scope.title = 'Add column'
               $scope.columnName = annotation.label
               $scope.columnType = annotation.celltype
-              
+
               $scope.delete = ->
 
                 # check if this is annotation has any properties
@@ -335,12 +393,12 @@ angular.module 'weaver',
 
                   object.annotations.$remove(annotation)
                   # todo actually remove the annotation object
-    
+
                   # refresh the table
                   object.$refresh = true
                   $timeout((-> object.$refresh = false), 1)
-                
-                  
+
+
                   $scope.$close()
 
               $scope.ok = ->
@@ -472,7 +530,7 @@ angular.module 'weaver',
       getHeaders = ->
         headers   = objectTableService.getColumnsHeader()
         (getHTMLHeader(header) for header in headers)
-        
+
       getHTMLHeader = (header) ->
         """
           <span class='table-header-title btn-stick'>#{header.name}</span>
@@ -480,8 +538,8 @@ angular.module 'weaver',
             <i style='padding: 3px 5px;' class='edit-attribute fa fa-pencil'></i>
           </button>
         """
-        
-    
+
+
       table = new Handsontable(containerDiv, {
 
         data:               objectTableService.data
@@ -854,7 +912,7 @@ angular.module 'weaver',
 
             $scope.conditions = filter.conditions
             $scope.objects = dataset.objects.$links()
-            $scope.views = dataset.views.$links()
+            $scope.views = dataset.models.$links()
 
 
 
