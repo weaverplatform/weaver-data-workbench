@@ -112,7 +112,7 @@ angular.module 'weaver',
     object.annotations = Weaver.collection()
     object.$push('annotations')
 
-    annotation = Weaver.add({label: 'has name', celltype: 'string'}, '$ANNOTATION')
+    annotation = Weaver.add({label: 'rdfs:label', celltype: 'string'}, '$ANNOTATION')
     object.annotations.$push(annotation)
 
 
