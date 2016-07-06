@@ -5,7 +5,13 @@
 
   <div class="input-group">
     <span class="input-group-addon">Name:</span>
-    <input type="text" class="form-control" placeholder="Username" aria-describedby="basic-addon1" ng-model="columnName">
+    <ol class="nya-bs-select btn-info input-group-btn" ng-model="selectedPredicate" data-live-search="false" style="display: block;">
+      <li nya-bs-option="predicate in predicates track by predicate.$id()">
+        <a>
+          {{ predicate.name }}
+        </a>
+      </li>
+    </ol>
   </div><br/>
 
   <div class="input-group">
