@@ -1,6 +1,6 @@
 {
   "name": "weaver-dataset-workbench",
-  "version": "0.1.17",
+  "version": "0.2.0",
   "main": "index.html",
   "ignore": [
     "**/.*",
@@ -36,7 +36,8 @@
     "offline": "~0.7.14",
     "socket.io-client": "~1.4.6",
     "underscore": "~1.8.3",
-    "weaver-sdk": "0.1.11",
+    "weaver-sdk": "0.2.0",
+    "weaver-commons": "0.1.0",
     "x-editable": "~1.5.1",
     "nya-bootstrap-select": "^2.1.5",
     "select2": "^4.0.2"
