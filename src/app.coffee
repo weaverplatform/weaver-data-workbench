@@ -137,16 +137,11 @@ angular.module 'weaver',
     object.annotations = Weaver.collection()
     object.$push('annotations')
 
-#    annotation = Weaver.add({predicate: $scope.getPredicate('rdfs:label'), celltype: 'string'}, '$ANNOTATION')
-#    object.annotations.$push(annotation)
 
     # Create first property
     object.properties = Weaver.collection()
     object.$push('properties')
 
-#    property = Weaver.add({subject: object, predicate: $scope.getPredicate('rdfs:label'), object: 'Unnamed'}, '$VALUE_PROPERTY')
-#    property.$push('annotation', annotation)
-#    object.properties.$push(property)
 
     # Open by default
     $scope.openTabs.push(object)
@@ -675,12 +670,6 @@ angular.module 'weaver',
 
 
 
-
-
-
-
-
-
 .factory('ObjectTableService', (Weaver) ->
 
 
@@ -736,18 +725,6 @@ angular.module 'weaver',
         @nextRow[id] = 0
 
       @nextCol++
-
-
-#    newAnnotation: (fields) ->
-#
-#      if not @object.annotations?
-#        @object.annotations = Weaver.collection()
-#        @object.$push('annotations')
-#
-#      annotation = Weaver.add(fields, '$ANNOTATION')
-#      @object.annotations.$push(annotation)
-#
-#      @addAnnotation(annotation.$id(), annotation)
 
 
     updateAnnotation: (annotationId, fields) ->
@@ -1215,26 +1192,7 @@ angular.module 'weaver',
     addFilter: (id, filter) ->
 
       @filterMap[id] = filter
-
-
-
       @nextCol++
-
-
-#    newFilter: (fields) ->
-#
-#      filter = Weaver.add(fields, '$FILTER')
-#
-#      # Create condition list
-#      filter.conditions = Weaver.collection()
-#      filter.$push('conditions')
-#      condition = Weaver.add({predicate:$scope.getPredicate('rdfs:label'), operation:'any-value', value:'', conditiontype:'string'}, '$CONDITION')
-#      filter.conditions.$push(condition)
-#
-#      @view.filters.$push(filter)
-#
-#      @addFilter(filter)
-
 
 
     # returns row where the property is placed
