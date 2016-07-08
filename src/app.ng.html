@@ -69,8 +69,8 @@
           <ul class="dropdown-menu">
             <li><a style="width:100%;cursor:pointer;" ng-click="addIndividual()">Individual</a></li>
             <li><a style="width:100%;cursor:pointer;" ng-click="addIndividualWithId()">Individual (specify id)</a></li>
-            <li><a style="width:100%;cursor:pointer;" ng-click="addPredicate()">Predicate</a></li>
-            <li><a style="width:100%;cursor:pointer;" ng-click="addView()">View</a></li>
+            <li><a style="width:100%;cursor:pointer;" ng-click="addPredicate()">Predicate (specify id)</a></li>
+            <li><a style="width:100%;cursor:pointer;" ng-click="addView()">Model</a></li>
             <!--<li role="separator" class="divider"></li>-->
             <!--<li><a href="#">Separated link</a></li>-->
           </ul>
@@ -87,12 +87,12 @@
 
         <div style="margin-bottom: 20px;">
 
-          <a style="margin-left:10px;" ng-click="downloadTurtle()" class="pull-right btn btn-primary"><i class="fa fa-download"></i></a>
+          <a style="margin-left:10px;" ng-click="exportQuads(entity)" class="pull-right btn btn-primary"><i class="fa fa-download"></i></a>
           <a ng-click="addColumn(entity)" ng-if="entity.$type()=='$INDIVIDUAL'" class="btn btn-default"><i class="fa fa-plus"></i> Add column</a>
           <a ng-click="addColumn(entity)" ng-if="entity.$type()=='$VIEW'" class="btn btn-default"><i class="fa fa-plus"></i> Add filter</a>
           <a ng-click="deleteObject(entity)" ng-if="entity.$type()=='$INDIVIDUAL'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete individual</a>
           <a ng-click="deletePredicate(entity)" ng-if="entity.$type()=='$PREDICATE'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete predicate</a>
-          <a ng-click="deleteView(entity)" ng-if="entity.$type()=='$VIEW'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete view</a>
+          <a ng-click="deleteView(entity)" ng-if="entity.$type()=='$VIEW'" class="btn btn-danger pull-right"><i class="fa fa-trash"></i> Delete model</a>
           <span class="pull-right" style="margin-right: 20px;text-align: right;">
             <span style="display:block;"><i class="fa fa-tag"></i> {{entity.$id()}}</span>
             <span style="display:block;" ng-if="entity.$type()=='$INDIVIDUAL'"><i class="fa fa-plug"></i> {{entity.source}}</span>
@@ -107,6 +107,17 @@
           <view-table ng-if="entity.$type()=='$VIEW' && !entity.$refresh" entity="entity" dataset="dataset"></view-table>
       </div>
     </div>
+
+    <table>
+      <tr><th style="padding:4px;">subject</th><th style="padding:4px;">predicate</th><th style="padding:4px;">object</th><th style="padding:4px;">graph</th></tr>
+      <tr ng-repeat="row in quadScreen track by $index">
+        <td ng-repeat="cell in row track by $index" style="padding:4px;">
+          {{cell}}
+        </td>
+      </tr>
+    </table>
+
+
   </div>
 </div>
 
