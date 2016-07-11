@@ -2,7 +2,6 @@
   "name": "weaver-data-workbench",
   "author": "Sysunite BV",
   "description": "Visual application to model Weaver datasets",
-  "readme": "README.md",
   "repository": {},
   "license": "GPL-3.0",
   "private": true,

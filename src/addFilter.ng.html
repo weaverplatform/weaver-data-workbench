@@ -10,14 +10,21 @@
 
   <div class="input-group">
     <span class="input-group-addon">Predicate:</span>
-    <input type="text" class="form-control" placeholder="description" ng-model="filterPredicate">
+    <!--<input type="text" class="form-control" placeholder="description" ng-model="filterPredicate">-->
+    <ol class="nya-bs-select btn-info input-group-btn" ng-model="filterPredicate" data-live-search="false" style="display: block;">
+      <li nya-bs-option="predicate in predicates track by predicate.$id()">
+        <a>
+          {{ predicate.name }}
+        </a>
+      </li>
+    </ol>
   </div>
 
   <div class="input-group">
     <span class="input-group-addon">Individual type:</span>
     <div class="input-group-btn" style="width:100%;">
-      <button type="button" class="btn btn-default half" ng-click="switchToString()" ng-class="{active:filterTypeString}">String</button>
-      <button type="button" class="btn btn-default half" ng-click="switchToObject()" ng-class="{active:filterTypeObject}">Individual</button>
+      <button type="button" class="btn btn-default half" ng-click="switchToString()"     ng-class="{active:filterTypeString}">String</button>
+      <button type="button" class="btn btn-default half" ng-click="switchToIndividual()" ng-class="{active:filterTypeIndividual}">Individual</button>
     </div>
   </div>
 
@@ -43,16 +50,16 @@
       <input type="text" class="form-control" name="x" placeholder="value" ng-model="condition.value">
     </span>
     <ol class="nya-bs-select btn-info" ng-model="condition.individualEntity" data-live-search="true" ng-show="operations[condition.operation]=='individual'" style="display: block;">
-      <li nya-bs-option="object in objects track by object.$id()">
+      <li nya-bs-option="individual in objects track by individual.$id()">
         <a>
-          {{ object.name }}
+          {{ individual.name }}
         </a>
       </li>
     </ol>
-    <ol class="nya-bs-select btn-info" ng-model="condition.view" data-live-search="true" ng-show="operations[condition.operation]=='view'" style="display: block;">
-      <li nya-bs-option="view in views track by view.$id()">
+    <ol class="nya-bs-select btn-info" ng-model="condition.modelEntity" data-live-search="true" ng-show="operations[condition.operation]=='model'" style="display: block;">
+      <li nya-bs-option="model in models track by model.$id()">
         <a>
-          {{ view.name }}
+          {{ model.name }}
         </a>
       </li>
     </ol>

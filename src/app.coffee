@@ -24,6 +24,7 @@ angular.module 'weaver',
   # Weaver app template
   $stateProvider
 
+
   .state 'app',
     url: '/:dataset',
     templateUrl: 'src/app.ng.html'
@@ -37,6 +38,10 @@ angular.module 'weaver',
 .factory('Weaver', ($window, WEAVER_ADDRESS) ->
   $window.weaver = new $window.Weaver().connect(WEAVER_ADDRESS)
   $window.weaver
+)
+
+.factory('WeaverCommons', ($window) ->
+  $window.WeaverCommons
 )
 
 .run(($state, editableOptions, $location, $window) ->
@@ -57,15 +62,23 @@ angular.module 'weaver',
 )
 
 
-.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, ObjectTableService, ViewTableService, $uibModal, dataset, $timeout, WEAVER_ADDRESS ) ->
+.controller 'AppCtrl', ($rootScope, $scope, Weaver, $window, ObjectTableService, ViewTableService, WeaverCommons, $uibModal, dataset, $timeout, WEAVER_ADDRESS ) ->
 
   # Init objects
   if not dataset.objects?
     dataset.objects = Weaver.collection()
     dataset.$push('objects')
-  if not dataset.views?
-    dataset.views = Weaver.collection()
-    dataset.$push('views')
+  if not dataset.predicates?
+    dataset.predicates = Weaver.collection()
+    dataset.$push('predicates')
+  if not dataset.models?
+    dataset.models = Weaver.collection()
+    dataset.$push('models')
+
+  $scope.getPredicate = (predicateName) ->
+    if not dataset.predicates[predicateName]?
+      throw new Error('predicate not found: '+predicateName)
+    dataset.predicates[predicateName]
 
   $scope.downloadTurtle = ->
     url = WEAVER_ADDRESS + "/turtle?id=" + $scope.dataset.$id()
@@ -81,10 +94,24 @@ angular.module 'weaver',
   readAllObjects()
 
 
+  $scope.allPredicates = []
+
+  readAllPredicates = ->
+    $scope.allPredicates = (view for id, view of $scope.dataset.predicates.$links())
+
+    # add default predicates
+    if not dataset.predicates['rdfs:label']?
+      predicate = Weaver.add({'name':'rdfs:label'}, '$PREDICATE', 'rdfs:label')
+      $scope.dataset.predicates.$push(predicate)
+
+
+  readAllPredicates()
+
+
   $scope.allViews = []
 
   readAllViews = ->
-    $scope.allViews = (view for id, view of $scope.dataset.views.$links())
+    $scope.allViews = (view for id, view of $scope.dataset.models.$links())
 
   readAllViews()
 
@@ -98,22 +125,17 @@ angular.module 'weaver',
 
     # Create object and add to dataset
     if(preferredId?)
-      object = Weaver.add({name: 'Unnamed'}, '$INDIVIDUAL', preferredId)
+      object = Weaver.add({name: 'Unnamed Individual', source: 'workbench'}, '$INDIVIDUAL', preferredId)
 
     else
-      object = Weaver.add({name: 'Unnamed'}, '$INDIVIDUAL')
+      object = Weaver.add({name: 'Unnamed Individual', source: 'workbench'}, '$INDIVIDUAL')
 
     # Create object and add to dataset
-
     $scope.dataset.objects.$push(object)
 
-    
     # Create first annotation
     object.annotations = Weaver.collection()
     object.$push('annotations')
-
-    annotation = Weaver.add({label: 'rdfs:label', celltype: 'string'}, '$ANNOTATION')
-    object.annotations.$push(annotation)
 
 
     # Create first property
@@ -121,32 +143,27 @@ angular.module 'weaver',
     object.$push('properties')
 
 
-    property = Weaver.add({subject: object, predicate: 'rdfs:label', object: 'Unnamed'}, '$VALUE_PROPERTY')
-
-    property.$push('annotation', annotation)
-    object.properties.$push(property)
-
-
-
     # Open by default
     $scope.openTabs.push(object)
     $scope.activeTab = object
     readAllObjects()
+    readAllPredicates()
     readAllViews()
 
   # Adds a new object to the dataset
   $scope.addView = ->
 
     # Create object and add to dataset
-    view = Weaver.add({name: 'Unnamed'}, '$VIEW')       
-    $scope.dataset.views.$push(view)
+    view = Weaver.add({name: 'Unnamed View'}, '$VIEW')
+    $scope.dataset.models.$push(view)
 
 
     # Create filters view
     view.filters = Weaver.collection()
     view.$push('filters')
 
-    filter = Weaver.add({label: 'has name', predicate:'rdfs:label', celltype: 'string'}, '$FILTER')
+    labelPredicate = $scope.getPredicate('rdfs:label')
+    filter = Weaver.add({label: 'has name', predicate:labelPredicate, celltype: 'string'}, '$FILTER')
 
     # Create condition list
     filter.conditions = Weaver.collection()
@@ -160,16 +177,50 @@ angular.module 'weaver',
     view.objects = Weaver.collection()
     view.$push('objects')
 
-
-
-
-
     # Open by default
     $scope.openTabs.push(view)
     $scope.activeTab = view
     readAllObjects()
+    readAllPredicates()
     readAllViews()
 
+  # Adds a new object to the dataset
+  $scope.addPredicate = ->
+
+    predicateName = prompt('Please specify the predicate:')
+
+#    payload = new WeaverCommons.create.Predicate({'id':predicateName,'name':predicateName})
+
+
+
+    # Create object and add to dataset
+    predicate = Weaver.add({'name':predicateName}, '$PREDICATE', predicateName)
+    $scope.dataset.predicates.$push(predicate)
+
+    # Open by default
+    $scope.openTabs.push(predicate)
+    $scope.activeTab = predicate
+    readAllObjects()
+    readAllPredicates()
+    readAllViews()
+
+  $scope.exportQuads = (entity) =>
+    selectorEntity = entity.$.id
+    if selectorEntity.indexOf(':') < 0
+      selectorEntity = 'ins:' + selectorEntity
+
+    Weaver.channel.nativeQuery(
+      {
+        query: 'select * where { graph ?g { ?s ?p ?o} graph ?g { '+selectorEntity+' ?p_ ?o_ } }'
+        selects: ['s', 'p', 'o', 'g']
+      }
+    ).then(
+      (result) =>
+        $scope.quadScreen = result
+        $scope.$apply() if !$scope.$$phase
+    )
+
+  $scope.quadScreen = [[]]
     
   $scope.addColumn = (entity) ->
 
@@ -179,14 +230,15 @@ angular.module 'weaver',
         entity.annotations = Weaver.collection()
         entity.$push('annotations')
 
-      annotation = Weaver.add({label: 'unnamed', celltype: 'string'}, '$ANNOTATION')
+      annotation = Weaver.add({celltype: 'string', predicate: $scope.getPredicate('rdfs:label')}, '$ANNOTATION')
       entity.annotations.$push(annotation)
       entity.$refresh = true
       $timeout((-> entity.$refresh = false), 1)
 
     else if entity.$type() is '$VIEW'
 
-      filter = Weaver.add({label: 'has name', predicate:'rdfs:label', celltype: 'string'}, '$FILTER')
+      labelPredicate = $scope.getPredicate('rdfs:label')
+      filter = Weaver.add({label: 'has name', predicate: labelPredicate, celltype: 'string'}, '$FILTER')
 
       # Create condition list
       filter.conditions = Weaver.collection()
@@ -208,17 +260,24 @@ angular.module 'weaver',
     $scope.dataset.objects.$remove(object)
     object.$destroy()
 
+  $scope.deletePredicate = (predicate) ->
+    $scope.closeTab(predicate)
+    location = $scope.allPredicates.indexOf(predicate)
+    $scope.allPredicates.splice(location, 1)
+    $scope.dataset.predicates.$remove(predicate)
+    predicate.$destroy()
+
   $scope.deleteView = (view) ->
     $scope.closeTab(view)
     location = $scope.allViews.indexOf(view)
     $scope.allViews.splice(location, 1)
-    $scope.dataset.views.$remove(view)
+    $scope.dataset.models.$remove(view)
     view.$destroy()
 
     
 
 
-  $scope.activeTree = 'data'
+  $scope.activeTree = 'individual'
   $scope.selectView = (viewName) ->
     $scope.activeTree = viewName
 
@@ -239,7 +298,7 @@ angular.module 'weaver',
     }
   }
 
-  $scope.viewTreeOptions = {
+  $scope.predicateTreeOptions = {
     injectClasses: {
       ul: "b1"
       li: "b2"
@@ -249,6 +308,19 @@ angular.module 'weaver',
       iLeaf: "b5"
       label: "b6"
       labelSelected: "b8"
+    }
+  }
+
+  $scope.viewTreeOptions = {
+    injectClasses: {
+      ul: "c1"
+      li: "c2"
+      liSelected: "c7"
+      iExpanded: "c3"
+      iCollapsed: "c4"
+      iLeaf: "c5"
+      label: "c6"
+      labelSelected: "c8"
     }
   }
 
@@ -303,6 +375,34 @@ angular.module 'weaver',
 
 
 
+.directive('predicateTable', ($uibModal, $timeout) ->
+  {
+    restrict: 'E'
+    link: (scope, element) ->
+
+      predicate = scope.entity
+      dataset = scope.dataset
+
+      tableElement = element[0]
+
+      containerDiv = document.createElement('div')
+      containerDiv.innerHTML = '<br/><br/><br/><br/>'
+      element[0].appendChild(containerDiv)
+  }
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
 .directive('objectTable', (ObjectTableService, $uibModal, $timeout) ->
   {
     restrict: 'E'
@@ -323,9 +423,11 @@ angular.module 'weaver',
             controller: ($scope) ->
 
               $scope.title = 'Add column'
-              $scope.columnName = annotation.label
+              $scope.columnName = annotation.predicate.name
               $scope.columnType = annotation.celltype
-              
+              $scope.predicates = dataset.predicates
+
+
               $scope.delete = ->
 
                 # check if this is annotation has any properties
@@ -335,22 +437,22 @@ angular.module 'weaver',
 
                   object.annotations.$remove(annotation)
                   # todo actually remove the annotation object
-    
+
                   # refresh the table
                   object.$refresh = true
                   $timeout((-> object.$refresh = false), 1)
-                
-                  
+
+
                   $scope.$close()
 
               $scope.ok = ->
-
 
                 # post
                 if($scope.columnName? and $scope.columnName isnt '')
 
                   fields = {
-                    label: $scope.columnName
+                    name: $scope.selectedPredicate.name
+                    predicate: $scope.selectedPredicate
                     celltype: $scope.columnType
                   }
 
@@ -472,7 +574,7 @@ angular.module 'weaver',
       getHeaders = ->
         headers   = objectTableService.getColumnsHeader()
         (getHTMLHeader(header) for header in headers)
-        
+
       getHTMLHeader = (header) ->
         """
           <span class='table-header-title btn-stick'>#{header.name}</span>
@@ -480,8 +582,8 @@ angular.module 'weaver',
             <i style='padding: 3px 5px;' class='edit-attribute fa fa-pencil'></i>
           </button>
         """
-        
-    
+
+
       table = new Handsontable(containerDiv, {
 
         data:               objectTableService.data
@@ -568,12 +670,6 @@ angular.module 'weaver',
 
 
 
-
-
-
-
-
-
 .factory('ObjectTableService', (Weaver) ->
 
 
@@ -617,8 +713,8 @@ angular.module 'weaver',
     getColumnsHeader: ->
       headers = []
       if @object.annotations?
-        headers.push({name:annotation.label, annotationId:id, annotated: true}) for id, annotation of @object.annotations.$links()
-      headers.push({name:predicate, annotationId:id, annotated: false}) for predicate, id of @unannotationsMap
+        headers.push({name:annotation.predicate.name, annotationId:id, annotated: true}) for id, annotation of @object.annotations.$links()
+      headers.push({name:predicate.name, annotationId:id, annotated: false}) for predicate, id of @unannotationsMap
       headers.sort((a,b) -> a.annotationId.localeCompare(b.annotationId))
 
     addAnnotation: (id, annotation) ->
@@ -629,18 +725,6 @@ angular.module 'weaver',
         @nextRow[id] = 0
 
       @nextCol++
-
-
-    newAnnotation: (fields) ->
-
-      if not @object.annotations?
-        @object.annotations = Weaver.collection()
-        @object.$push('annotations')
-
-      annotation = Weaver.add(fields, '$ANNOTATION')
-      @object.annotations.$push(annotation)
-
-      @addAnnotation(annotation.$id(), annotation)
 
 
     updateAnnotation: (annotationId, fields) ->
@@ -682,16 +766,18 @@ angular.module 'weaver',
     # returns row where the property is placed
     addUnannotatedProperty: (property) ->
 
-      if not @unannotationsMap[property.predicate]?
+      predicateName = property.predicate.name
+
+      if not @unannotationsMap[predicateName]?
         newid = cuid()
-        @unannotationsMap[property.predicate] = newid
+        @unannotationsMap[predicateName] = newid
 
         if not @nextRow[newid]?
           @nextRow[newid] = 0
 
         @nextCol++
 
-      annotationId = @unannotationsMap[property.predicate]
+      annotationId = @unannotationsMap[predicateName]
 
       if not @data[@nextRow[annotationId]]?
         @data.push({})
@@ -715,12 +801,12 @@ angular.module 'weaver',
 
       if annotation.celltype is 'string'
 
-        property = Weaver.add({subject: @object, predicate: annotation.label, object: value}, '$VALUE_PROPERTY')
+        property = Weaver.add({subject: @object, predicate: annotation.predicate, object: value}, '$VALUE_PROPERTY')
         property.$push('annotation', annotation)
 
       if annotation.celltype is 'individual'
 
-        property = Weaver.add({subject: @object, predicate: annotation.label, object: value}, '$INDIVIDUAL_PROPERTY')
+        property = Weaver.add({subject: @object, predicate: annotation.predicate, object: value}, '$INDIVIDUAL_PROPERTY')
         property.$push('annotation', annotation)
 
       if not property?
@@ -797,17 +883,14 @@ angular.module 'weaver',
   link: (scope, element) ->
 
     # directive attributes
-    view = scope.entity
+    viewEntity = scope.entity
     dataset = scope.dataset
 
-
-
-
-    weaver.getView(view.$id())
-    .then((list) ->
-      list.populate()
+    Weaver.getView(viewEntity.$id())
+    .then((view) ->
+      view.populate()
     ).then((population) =>
-      viewTableService = new ViewTableService(view, population, scope)
+      viewTableService = new ViewTableService(viewEntity, population, scope)
 
       editColumnModal = (filterId) ->
         filter = viewTableService.getFilterById(filterId)
@@ -831,30 +914,31 @@ angular.module 'weaver',
               'this-individual':'individual'
               'not-this-individual':'individual'
               '-1':'-'
-              'all-from-view':'view'
-              'at-least-one-from-view':'view'
-              'none-from-view':'view'
+              'any-from-model':'model'
               '-2':'-'
               'min-card':'string'
               'max-card':'string'
             }
 
             $scope.title = 'Add filter'
+
+            $scope.predicates = dataset.predicates
+
             $scope.filterName = filter.label
             $scope.filterPredicate = filter.predicate
             $scope.filterType = filter.celltype
 
             $scope.filterTypeString = (filter.celltype is 'string')
-            $scope.filterTypeObject = (filter.celltype is 'individual')
+            $scope.filterTypeIndividual = (filter.celltype is 'individual')
 
 
             $scope.operations = operationsString # default
-            if $scope.filterTypeObject
+            if $scope.filterTypeIndividual
               $scope.operations = operationsObject
 
             $scope.conditions = filter.conditions
             $scope.objects = dataset.objects.$links()
-            $scope.views = dataset.views.$links()
+            $scope.models = dataset.models.$links()
 
 
 
@@ -863,9 +947,9 @@ angular.module 'weaver',
 
 
             $scope.switchToString = ->
-              if $scope.filterTypeObject
-                $scope.filterTypeObject = false
+              if $scope.filterTypeIndividual
                 $scope.filterTypeString = true
+                $scope.filterTypeIndividual = false
                 $scope.filterType = 'string'
                 $scope.operations = operationsString
                 $scope.removeCondition(condition) for key, condition of $scope.conditions.$links()
@@ -874,10 +958,10 @@ angular.module 'weaver',
 
 
 
-            $scope.switchToObject = ->
+            $scope.switchToIndividual = ->
               if $scope.filterTypeString
                 $scope.filterTypeString = false
-                $scope.filterTypeObject = true
+                $scope.filterTypeIndividual = true
                 $scope.filterType = 'individual'
                 $scope.operations = operationsObject
                 $scope.removeCondition(condition) for key, condition of $scope.conditions.$links()
@@ -890,11 +974,13 @@ angular.module 'weaver',
 
 
 
+
+
             $scope.addCondition = ->
               if $scope.filterTypeString
                 condition = Weaver.add({operation: 'any-value', value:'', conditiontype:'string'}, '$CONDITION')
-              else if $scope.filterTypeObject
-                condition = Weaver.add({operation: 'any-individual', individual:'', conditiontype:'individual'}, '$CONDITION')
+              else if $scope.filterTypeIndividual
+                condition = Weaver.add({operation: 'any-individual', value:'', conditiontype:'individual'}, '$CONDITION')
 
               $scope.conditions.$push(condition)
 
@@ -909,12 +995,12 @@ angular.module 'weaver',
 
             $scope.delete = ->
 
-              view.filters.$remove(filter)
+              viewEntity.filters.$remove(filter)
               # todo actually remove the filter object and its conditions from redis
 
               # refresh the table
-              view.$refresh = true
-              $timeout((-> view.$refresh = false), 1)
+              viewEntity.$refresh = true
+              $timeout((-> viewEntity.$refresh = false), 1)
               
               $scope.$close()
 
@@ -934,10 +1020,10 @@ angular.module 'weaver',
 
                   # determine operation type
                   operationType = 'none'
-                  if condition.conditiontype is 'individual'
-                    operationType = operationsObject[condition.operation]
                   if condition.conditiontype is 'string'
                     operationType = operationsString[condition.operation]
+                  if condition.conditiontype is 'individual'
+                    operationType = operationsObject[condition.operation]
 
                   # act on the operation type
                   if operationType is 'none'
@@ -947,14 +1033,17 @@ angular.module 'weaver',
                     condition.$push('value')
 
                   else if operationType is 'individual'
-                    condition.individual =  condition.individualEntity.$id()
-                    condition.$push('individual')
+                    condition.value =  condition.individualEntity.$id()
+                    condition.$push('individualEntity')
+                    condition.$push('value')
 
-                  else if operationType is 'view'
-                    condition.$push('view')
+                  else if operationType is 'model'
+                    condition.value =  condition.modelEntity.$id()
+                    condition.$push('modelEntity')
+                    condition.$push('value')
 
-                view.$refresh = true
-                $timeout((-> view.$refresh = false), 1)
+                viewEntity.$refresh = true
+                $timeout((-> viewEntity.$refresh = false), 1)
 
               $scope.$close()
 
@@ -1103,26 +1192,7 @@ angular.module 'weaver',
     addFilter: (id, filter) ->
 
       @filterMap[id] = filter
-
-
-
       @nextCol++
-
-
-    newFilter: (fields) ->
-
-      filter = Weaver.add(fields, '$FILTER')
-
-      # Create condition list
-      filter.conditions = Weaver.collection()
-      filter.$push('conditions')
-      condition = Weaver.add({predicate:'rdfs:label', operation:'any-value', value:'', conditiontype:'string'}, '$CONDITION')
-      filter.conditions.$push(condition)
-
-      @view.filters.$push(filter)
-
-      @addFilter(filter)
-
 
 
     # returns row where the property is placed

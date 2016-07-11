@@ -201,38 +201,38 @@ module.exports = (grunt) ->
     
     
   
-    dom_munger:
-      read: 
-        options: 
-          read:[
-            {selector:'script[in-production!="false"]', attribute:'src', writeto:'appjs'}
-            {selector:'link[rel="stylesheet"][in-production!="false"]', attribute:'href', writeto:'appcss'}
-          ]
-        
-        src: 'src/index.html'
-      
-      update: 
-        options: 
-          remove: ['script', 'link[rel="stylesheet"]']
-          append: [
-            {selector: 'body', html:'<script src="weaver.js"></script>'}
-            {selector:'head', html:'<link rel="stylesheet" href="weaver.css">'}
-          ]
-        
-        src:'src/index.html'
-        dest: 'dist/index.html'
+#    dom_munger:
+#      read:
+#        options:
+#          read:[
+#            {selector:'script[in-production!="false"]', attribute:'src', writeto:'appjs'}
+#            {selector:'link[rel="stylesheet"][in-production!="false"]', attribute:'href', writeto:'appcss'}
+#          ]
+#
+#        src: 'src/index.html'
+#
+#      update:
+#        options:
+#          remove: ['script', 'link[rel="stylesheet"]']
+#          append: [
+#            {selector: 'body', html:'<script src="weaver.js"></script>'}
+#            {selector:'head', html:'<link rel="stylesheet" href="weaver.css">'}
+#          ]
+#
+#        src:'src/index.html'
+#        dest: 'dist/index.html'
       
     
   
     cssmin: 
       main: 
-        src:['tmp/weaver.css', '<%= dom_munger.data.appcss %>']
+        src:['tmp/weaver.css']        # , '<%= dom_munger.data.appcss %>'
         dest:'dist/weaver.css'
       
   
     concat: 
       main: 
-        src: ['<%= dom_munger.data.appjs %>', '<%= ngtemplates.main.dest %>', '<%= ngtemplates.runx.dest %>']
+        src: ['<%= ngtemplates.main.dest %>', '<%= ngtemplates.runx.dest %>']      #'<%= dom_munger.data.appjs %>',
         dest: 'tmp/weaver.js'
       
     
@@ -277,7 +277,7 @@ module.exports = (grunt) ->
 
   grunt.registerTask('default', ['ngconstant', 'clean:after', 'coffee', 'connect', 'watch'])
   grunt.registerTask('wire', ['wiredep'])
-  grunt.registerTask('build',['clean:before', 'coffeelint', 'coffee','less', 'htmlangular', 'dom_munger','ngtemplates','ngconstant','cssmin','concat','ngAnnotate','copy:main', 'copy:weaver', 'htmlmin','imagemin','clean:after'])
+  grunt.registerTask('build',['clean:before', 'coffeelint', 'coffee','less', 'htmlangular', 'ngtemplates','ngconstant','cssmin','concat','ngAnnotate','copy:main', 'copy:weaver', 'htmlmin','imagemin','clean:after'])   # 'dom_munger',
 
 
 
@@ -299,17 +299,17 @@ module.exports = (grunt) ->
 
       # if the spec exists then lets run it
       if (grunt.file.exists(spec)) 
-        files = [].concat(grunt.config('dom_munger.data.appjs'))
+        files = [] #.concat(grunt.config('dom_munger.data.appjs'))
         files.push('bower_components/angular-mocks/angular-mocks.js')
         files.push(spec)
         grunt.config('karma.options.files', files)
         tasksToRun.push('karma:during_watch')
       
 
-    # if index.html changed, we need to reread the <script> tags so our next run of karma
-    # will have the correct environment
-    if (filepath is 'src/index.html') 
-      tasksToRun.push('dom_munger:read')
+#    # if index.html changed, we need to reread the <script> tags so our next run of karma
+#    # will have the correct environment
+#    if (filepath is 'src/index.html')
+#      tasksToRun.push('dom_munger:read')
     
 
     grunt.config('watch.main.tasks',tasksToRun)
