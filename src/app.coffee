@@ -78,6 +78,7 @@ angular.module 'weaver',
   $scope.getPredicate = (predicateName) ->
     if not dataset.predicates[predicateName]?
       throw new Error('predicate not found: '+predicateName)
+    console.log(dataset.predicates[predicateName])
     dataset.predicates[predicateName]
 
   $scope.downloadTurtle = ->
@@ -162,8 +163,8 @@ angular.module 'weaver',
     view.filters = Weaver.collection()
     view.$push('filters')
 
-    labelPredicate = $scope.getPredicate('rdfs:label')
-    filter = Weaver.add({label: 'has name', predicate:labelPredicate, celltype: 'string'}, '$FILTER')
+    labelPredicate = $scope.getPredicate('rdfs:label').$id()
+    filter = Weaver.add({label: 'has name', predicate: labelPredicate, celltype: 'string'}, '$FILTER')
 
     # Create condition list
     filter.conditions = Weaver.collection()
@@ -230,14 +231,15 @@ angular.module 'weaver',
         entity.annotations = Weaver.collection()
         entity.$push('annotations')
 
-      annotation = Weaver.add({celltype: 'string', predicate: $scope.getPredicate('rdfs:label')}, '$ANNOTATION')
+      labelPredicate = $scope.getPredicate('rdfs:label').$id()
+      annotation = Weaver.add({celltype: 'string', predicate: labelPredicate}, '$ANNOTATION')
       entity.annotations.$push(annotation)
       entity.$refresh = true
       $timeout((-> entity.$refresh = false), 1)
 
     else if entity.$type() is '$VIEW'
 
-      labelPredicate = $scope.getPredicate('rdfs:label')
+      labelPredicate = $scope.getPredicate('rdfs:label').$id()
       filter = Weaver.add({label: 'has name', predicate: labelPredicate, celltype: 'string'}, '$FILTER')
 
       # Create condition list
@@ -386,7 +388,7 @@ angular.module 'weaver',
       tableElement = element[0]
 
       containerDiv = document.createElement('div')
-      containerDiv.innerHTML = '<br/><br/><br/><br/>'
+      containerDiv.innerHTML = '<br/><br/><br/><br/>' + predicate.preferredName + '<br/>' + predicate.reversedName
       element[0].appendChild(containerDiv)
   }
 )
@@ -423,7 +425,7 @@ angular.module 'weaver',
             controller: ($scope) ->
 
               $scope.title = 'Add column'
-              $scope.columnName = annotation.predicate.name
+              $scope.columnName = annotation.predicate
               $scope.columnType = annotation.celltype
               $scope.predicates = dataset.predicates
 
@@ -450,9 +452,10 @@ angular.module 'weaver',
                 # post
                 if($scope.columnName? and $scope.columnName isnt '')
 
+                  labelPredicate = $scope.selectedPredicate.id
                   fields = {
-                    name: $scope.selectedPredicate.name
-                    predicate: $scope.selectedPredicate
+                    name: labelPredicate
+                    predicate: labelPredicate
                     celltype: $scope.columnType
                   }
 
@@ -713,8 +716,8 @@ angular.module 'weaver',
     getColumnsHeader: ->
       headers = []
       if @object.annotations?
-        headers.push({name:annotation.predicate.name, annotationId:id, annotated: true}) for id, annotation of @object.annotations.$links()
-      headers.push({name:predicate.name, annotationId:id, annotated: false}) for predicate, id of @unannotationsMap
+        headers.push({name:annotation.predicate, annotationId:id, annotated: true}) for id, annotation of @object.annotations.$links()
+      headers.push({name:predicate, annotationId:id, annotated: false}) for predicate, id of @unannotationsMap
       headers.sort((a,b) -> a.annotationId.localeCompare(b.annotationId))
 
     addAnnotation: (id, annotation) ->
@@ -766,7 +769,7 @@ angular.module 'weaver',
     # returns row where the property is placed
     addUnannotatedProperty: (property) ->
 
-      predicateName = property.predicate.name
+      predicateName = property.predicate
 
       if not @unannotationsMap[predicateName]?
         newid = cuid()
@@ -925,7 +928,9 @@ angular.module 'weaver',
             $scope.predicates = dataset.predicates
 
             $scope.filterName = filter.label
-            $scope.filterPredicate = filter.predicate
+            if not filter.predicateEntity?
+              console.error('no predicateEntity found on this filter, should look for one with this id '+filter.predicate)
+            $scope.filterPredicate = filter.predicateEntity
             $scope.filterType = filter.celltype
 
             $scope.filterTypeString = (filter.celltype is 'string')
@@ -1011,7 +1016,8 @@ angular.module 'weaver',
               if($scope.filterName? and $scope.filterName isnt '')
 
                 filter.$push('label', $scope.filterName)
-                filter.$push('predicate', $scope.filterPredicate)
+                filter.$push('predicate', $scope.filterPredicate.id)
+                filter.$push('predicateEntity', $scope.filterPredicate)
                 filter.$push('celltype', $scope.filterType)
 
                 for key, condition of $scope.conditions.$links()

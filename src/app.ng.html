@@ -26,7 +26,7 @@
       </span>
       <span  ng-if="activeTree=='predicate'">
         <treecontrol class="tree-classic" tree-model="allPredicates" options="predicateTreeOptions">
-          <a ng-click="buttonClick($event, node)">{{node.name}}</a>
+          <a ng-click="buttonClick($event, node)">{{node.preferredName}}</a>
         </treecontrol>
       </span>
       <span ng-show="activeTree=='view'">
@@ -47,11 +47,22 @@
         <!-- Objects -->
         <li ng-repeat="object in openTabs" role="presentation" ng-class="{active:object==activeTab}" ng-click="activateTab(object)">
 
-          <!-- Object Tab -->
-          <a editable-text="object.name" onaftersave="object.$push('name')" e-form="renameBtn" style="cursor:pointer">
+          <!-- Individual Tab -->
+          <a editable-text="object.name" onaftersave="object.$push('name')" e-form="renameBtn" style="cursor:pointer" ng-if="activeTree=='individual'">
             {{object.name}}
-            
-            <!-- Buttons -->
+            <i style="margin-left: 5px;" class="fa fa-pencil"  ng-show="object==activeTab" ng-click="renameBtn.$show()" ng-hide="renameBtn.$visible"></i>
+            <i style="margin-left: 5px;" class="fa fa-close"   ng-show="object==activeTab" ng-click="closeTab(object)"></i>
+          </a>
+
+          <!-- View Tab -->
+          <a style="cursor:pointer" ng-if="activeTree=='predicate'">
+            {{object.preferredName}}
+            <i style="margin-left: 5px;" class="fa fa-close"   ng-show="object==activeTab" ng-click="closeTab(object)"></i>
+          </a>
+
+          <!-- View Tab -->
+          <a editable-text="object.name" onaftersave="object.$push('name')" e-form="renameBtn" style="cursor:pointer" ng-if="activeTree=='view'">
+            {{object.name}}
             <i style="margin-left: 5px;" class="fa fa-pencil"  ng-show="object==activeTab" ng-click="renameBtn.$show()" ng-hide="renameBtn.$visible"></i>
             <i style="margin-left: 5px;" class="fa fa-close"   ng-show="object==activeTab" ng-click="closeTab(object)"></i>
           </a>
@@ -103,8 +114,21 @@
 
         </div>
         <object-table ng-if="entity.$type()=='$INDIVIDUAL' && !entity.$refresh" entity="entity" dataset="dataset" ></object-table>
-     <predicate-table ng-if="entity.$type()=='$PREDICATE' && !entity.$refresh" entity="entity" dataset="dataset"></predicate-table>
-          <view-table ng-if="entity.$type()=='$VIEW' && !entity.$refresh" entity="entity" dataset="dataset"></view-table>
+        <span ng-if="entity.$type()=='$PREDICATE' && !entity.$refresh" entity="entity" dataset="dataset">
+          <a editable-text="entity.preferredName" onaftersave="entity.$push('preferredName')" e-form="preferredRenameBtn" style="cursor:pointer">
+            {{entity.preferredName}}
+            <i style="margin-left: 5px;" class="fa fa-pencil" ng-click="preferredRenameBtn.$show()" ng-hide="preferredRenameBtn.$visible"></i>
+          </a><br />
+          <a editable-text="entity.reversedName" onaftersave="entity.$push('reversedName')" e-form="reversedRenameBtn" style="cursor:pointer">
+            {{entity.reversedName}}
+            <i style="margin-left: 5px;" class="fa fa-pencil" ng-click="reversedRenameBtn.$show()" ng-hide="reversedRenameBtn.$visible"></i>
+          </a>
+
+          <div ng-repeat="subProperty in entity.subProperties" ng-show="entity==activeTab">
+            {{subProperty.preferredName}}
+          </div>
+        </span>
+        <view-table ng-if="entity.$type()=='$VIEW' && !entity.$refresh" entity="entity" dataset="dataset"></view-table>
       </div>
     </div>
 
